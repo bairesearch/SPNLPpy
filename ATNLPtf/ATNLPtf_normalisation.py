@@ -26,7 +26,7 @@ import ATNLPtf_getAllPossiblePosTags
 patchNormalisationSize = 100
 patchNormalisationSizeAntialias = True
 
-sentenceNormalisationDelimiterPOStags = [".", "IN", ",", ";"]	#IN=prep	#CHECKTHIS
+sentenceNormalisationDelimiterPOStags = [".", "CC", "IN", "TO", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ", ",", ";"]	#CHECKTHIS	#require to detect rcmod (that/which etc), additional punctuation ('', (, ), ,, --, ., :), RP particle, etc?	#keypoint/feature detection
 
 spacyWordVectorGenerator = spacy.load('en_core_web_md')	#spacy.load('en_core_web_lg')
 
@@ -115,7 +115,9 @@ def getKeypoints(textWordList):
 			keypointsList.append(True)
 		else:
 			keypointsList.append(False)
-			
+	
+	print("keypointsList = ", keypointsList)
+		
 	return keypointsList
 
 def normaliseInputVectorUsingKeypoints(inputVectorList, keypointsList):
