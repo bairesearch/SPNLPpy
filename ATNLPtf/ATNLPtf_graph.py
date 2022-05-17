@@ -35,8 +35,9 @@ graphNodeTypeHead = 2
 
 conceptID = 0	#special instance ID for concepts
 maxTimeDiff = 999999
-minRecency = 0.1
-maxTimeDiffForMatchingInstance = 2	#time in sentence index diff
+minRecency = 0.1	#CHECKTHIS (> 0: ensures recency for unencountered concepts is not zero - required for metric)
+maxTimeDiffForMatchingInstance = 2	#time in sentence index diff	#CHECKTHIS
+metricThresholdToCreateConnection = 1.0	#requires calibration
 
 class GraphNode:
 	def __init__(self, instanceID, word, lemma, wordVector, posTag, nodeGraphType, activationTime):
@@ -61,12 +62,18 @@ graphConnectionsDictionary = {}	#dict indexed tuples (lemma1, instanceID1, lemma
 
 def generateGraph(sentenceIndex, sentence):
 	
+	print("\n\ngenerateGraph: sentenceIndex = ", sentenceIndex, "; ", sentence)
+	
 	currentTime = calculateActivationTime(sentenceIndex)
 	
 	sentenceNodeList = []	#local/temporary list of sentence instance nodes
 		
 	tokenisedSentence = tokeniseSentence(sentence)
 	sentenceLength = len(tokenisedSentence)
+	
+	foundInstanceReferenceList = [False]*sentenceLength
+	foundExistingConceptList = [False]*sentenceLength
+	mostRecentInstanceNodeList = [None]*sentenceLength
 	
 	#add graph nodes;
 	for w, token in enumerate(tokenisedSentence):	
@@ -79,14 +86,15 @@ def generateGraph(sentenceIndex, sentence):
 		nodeGraphType = getNodeGraphType(posTag)
 		
 		foundRecentIndex = False
-		conceptAlreadyExists = False
 		if lemma in graphNodeDictionary:
 			#lookup most recent instance
-			conceptAlreadyExists = True
-			mostRecentInstanceTimeDiff, mostRecentInstanceNode = findMostRecentInstance(lemma, currentTime)
-			if(mostRecentInstanceTimeDiff < maxTimeDiffForMatchingInstance):
-				foundRecentIndex = True
-				#node2.foundRecentIndex = True
+			foundMostRecentInstanceNode, mostRecentInstanceNode, mostRecentInstanceTimeDiff = findMostRecentInstance(lemma, currentTime)
+			if(foundMostRecentInstanceNode):
+				mostRecentInstanceNodeList[w] = mostRecentInstanceNode
+				foundExistingConceptList[w] = True
+				if(mostRecentInstanceTimeDiff < maxTimeDiffForMatchingInstance):
+					foundRecentIndex = True
+					foundInstanceReferenceList[w] = True
 		else:
 			#add concept to dictionary;
 			createSubDictionaryForConcept(graphNodeDictionary, lemma)
@@ -96,47 +104,47 @@ def generateGraph(sentenceIndex, sentence):
 
 		#add instance to dictionary;
 		if(foundRecentIndex):
-			print("mostRecentInstanceNode.instanceID = ", mostRecentInstanceNode.instanceID) 
+			print("create reference to mostRecentInstanceNode; ", mostRecentInstanceNode.lemma, ": instanceID=", mostRecentInstanceNode.instanceID) 
 			instanceNode = mostRecentInstanceNode
 		else:
 			instanceID = getNewInstanceID(lemma)
 			instanceNode = GraphNode(instanceID, word, lemma, wordVector, posTag, nodeGraphType, currentTime)
-			print("instanceNode.instanceID = ", instanceNode.instanceID)
+			print("create new instanceNode; ", instanceNode.lemma, ": instanceID=", instanceNode.instanceID)
 			addInstanceNodeToGraph(lemma, instanceID, instanceNode)
 
 		sentenceNodeList.append(instanceNode)
 
 
 	#add graph connections;
-	metricMax = 0.0
-	connectionEndWordIndex = -1		
-	minRecency = 0.1
 	foundConnection = [False]*sentenceLength	#found connection (direction: source to target)
-	for w in range(sentenceLength):	
-		connectionDirection = True	
-		for w2 in range(sentenceLength):
-			if(w != w2):
-				node1 = sentenceNodeList[w]
-				node2 = sentenceNodeList[w2]
+	for distance in range(1, sentenceLength):	#search for proximal connections before distal connections
+		for w in range(sentenceLength):	
+			if(not foundConnection[w]):
+				w2 = w + distance
+				connectionDirection = True	
+				if(w2 < sentenceLength):
+					node1 = sentenceNodeList[w]
+					node2 = sentenceNodeList[w2]
 
-				proximity = calculateProximity(w, w2)
-				frequency = calculateFrequency(sentenceNodeList, node1, node2)
-				if(conceptAlreadyExists):
-					recency = calculateRecency(mostRecentInstanceTimeDiff)	#CHECKTHIS
-				else:
-					recency = minRecency
-				metric = calculateMetric(proximity, frequency, recency)
-				if(metric > metricMax):
-					metricMax = metric
-					connectionEndWordIndex = w2
-					connectionDirection = True	#CHECKTHIS: always assume left to right directionality
+					proximity = calculateProximity(w, w2)
+					frequency = calculateFrequency(sentenceNodeList, node1, node2)
+					if(foundExistingConceptList[w2]):	#or foundInstanceReferenceList[w2] - more stringent constraint
+						mostRecentInstanceTimeDiff = calculateTimeDiffAbsolute(mostRecentInstanceNodeList[w2].activationTime, currentTime)	#regenerate value
+						recency = calculateRecency(mostRecentInstanceTimeDiff)	#CHECKTHIS
+					else:
+						recency = minRecency
+					metric = calculateMetric(proximity, frequency, recency)
+					if(metric > metricThresholdToCreateConnection):
+						print("create connection; w w2 = ", w, " ", w2, ", node1.lemma node2.lemma = ", node1.lemma, " ", node2.lemma, ", metric = ", metric)
+						connectionDirection = True	#CHECKTHIS: always assume left to right directionality
+						foundConnection[w] = True
+						createGraphConnectionWrapper(node1, node2, connectionDirection)
 
-				#limitations (TODO):
-				#- currently only support 1 connection per word in sentence
-				#- infers directionality (source/target) of connection based on w1/w2 word order
+	#limitations (CHECKTHIS):
+	#- currently only support 1 connection (per direction) per word in sentence
+	#- infers directionality (source/target) of connection based on w1/w2 word order
 
-		nodeEnd = sentenceNodeList[connectionDirection]
-		createGraphConnectionWrapper(node1, nodeEnd, connectionDirection)
+
 		
 def createSubDictionaryForConcept(dic, lemma):
 	dic[lemma] = {}	#create empty dictionary for new concept
@@ -158,11 +166,11 @@ def getNewInstanceID(lemma):
 	return newInstanceID
 	
 def calculateMetric(proximity, frequency, recency):
-	print("proximity = ", proximity)
-	print("frequency = ", frequency)
-	print("recency = ", recency)
+	#print("\tproximity = ", proximity)
+	#print("\tfrequency = ", frequency)
+	#print("\trecency = ", recency)
 	metric = proximity*frequency*recency #CHECKTHIS - normalisation of factors is required
-	print("metric = ", metric)
+	#print("\tmetric = ", metric)
 	return metric
 	
 def calculateActivationTime(sentenceIndex):
@@ -179,21 +187,24 @@ def calculateFrequency(sentenceNodeList, node1, node2):
 
 #FUTURE: needs to support subgraphFindMostRecentInstance (verify that subgraphs align)
 def findMostRecentInstance(lemma, currentTime):
-	print("findMostRecentInstance") 
+	#print("findMostRecentInstance") 
 	#calculates recency of most recent instance, and returns this instance
+	foundMostRecentInstanceNode = False
 	instanceDict2 = graphNodeDictionary[lemma]
 	minTimeDiff = maxTimeDiff
 	mostRecentInstanceNode = None
 	for instanceID2, node2 in instanceDict2.items():
 		if(node2.activationTime != currentTime):	#ignore instances that were added from same sentence
 			timeDiff = calculateTimeDiffAbsolute(node2.activationTime, currentTime)
-			print("timeDiff = ", timeDiff)
+			#print("timeDiff = ", timeDiff)
 			if(timeDiff < minTimeDiff):
+				foundMostRecentInstanceNode = True
 				minTimeDiff = timeDiff
 				mostRecentInstanceNode = node2	#dict key
 
-	print("minTimeDiff = ", minTimeDiff)
-	return minTimeDiff, mostRecentInstanceNode
+	mostRecentInstanceTimeDiff = minTimeDiff
+	#print("mostRecentInstanceTimeDiff = ", mostRecentInstanceTimeDiff)
+	return foundMostRecentInstanceNode, mostRecentInstanceNode, mostRecentInstanceTimeDiff
 
 def calculateRecencyAbsolute(node2activationTime, currentTime):
 	timeDiff = calculateTimeDiffAbsolute(node2activationTime, currentTime)
@@ -259,7 +270,7 @@ def calculateSubgraphArtificialWordVector(sentenceNodeList, node, subgraphArtifi
 def calculateWordVectorSimilarity(wordVector1, wordVector2):
 	wordVectorDiff = compareWordVectors(wordVector1, wordVector2)
 	similarity = 1.0 - wordVectorDiff
-	print("similarity = ", similarity)
+	#print("similarity = ", similarity)
 	return similarity
 
 def compareWordVectors(wordVector1, wordVector2):
