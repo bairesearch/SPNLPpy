@@ -41,24 +41,37 @@ np.set_printoptions(threshold=sys.maxsize)
 
 import random
 import ANNtf2_loadDataset
-import ATNLPtf_normalisation
 
+
+#ATNLP algorithm selection;
+#algorithmATNLP = "normaliseInputVectors"	#original ATNLP method
+algorithmATNLP = "generateGraph"	#method of syntactical/semantic graph construction based on word proximity, frequency, and recency
+
+#debug parameters
+debugUseSmallSequentialInputDataset = False
+
+if(algorithmATNLP == "normaliseInputVectors"):
+	import ATNLPtf_normalisation
+	NLPsequentialInputTypeTokeniseWords = True	#perform nltk tokenization early in pipeline
+elif(algorithmATNLP == "generateGraph"):
+	import ATNLPtf_graph
+	NLPsequentialInputTypeTokeniseWords = False	#perform spacy tokenization later in pipeline
 
 supportBatchAndMultiAbstractionLevelProcessing = False		#batches are not currently processed/normalised in parallel (retained for source base compatibility);
 if(supportBatchAndMultiAbstractionLevelProcessing):
 	import ATNLPtf_processingBatchAndMultiAbstractionLevel
-	ATNLPsequentialInputTypeMinWordVectors = ATNLPtf_processingBatchAndMultiAbstractionLevel.ATNLPsequentialInputTypeMinWordVectors
-	ATNLPsequentialInputTypeMaxWordVectors = ATNLPtf_processingBatchAndMultiAbstractionLevel.ATNLPsequentialInputTypeMaxWordVectors
-	ATNLPsequentialInputTypesMaxLength = ATNLPtf_processingBatchAndMultiAbstractionLevel.ATNLPsequentialInputTypesMaxLength
-	useSmallSentenceLengths = ATNLPtf_processingBatchAndMultiAbstractionLevel.useSmallSentenceLengths
-	ATNLPsequentialInputTypeTrainWordVectors = ATNLPtf_processingBatchAndMultiAbstractionLevel.ATNLPsequentialInputTypeTrainWordVectors	
-if(not supportBatchAndMultiAbstractionLevelProcessing):
+	NLPsequentialInputTypeMinWordVectors = ATNLPtf_processingBatchAndMultiAbstractionLevel.NLPsequentialInputTypeMinWordVectors
+	NLPsequentialInputTypeMaxWordVectors = ATNLPtf_processingBatchAndMultiAbstractionLevel.NLPsequentialInputTypeMaxWordVectors
+	limitSentenceLengthsSize = ATNLPtf_processingBatchAndMultiAbstractionLevel.limitSentenceLengthsSize
+	limitSentenceLengths = ATNLPtf_processingBatchAndMultiAbstractionLevel.useSmallSentenceLengths
+	NLPsequentialInputTypeTrainWordVectors = ATNLPtf_processingBatchAndMultiAbstractionLevel.NLPsequentialInputTypeTrainWordVectors	
+else:
 	#mandatory for !supportBatchAndMultiAbstractionLevelProcessing;
-	ATNLPsequentialInputTypeMinWordVectors = True
-	ATNLPsequentialInputTypeMaxWordVectors = True
-	ATNLPsequentialInputTypesMaxLength = None
-	useSmallSentenceLengths = False
-	ATNLPsequentialInputTypeTrainWordVectors = False
+	NLPsequentialInputTypeMinWordVectors = True
+	NLPsequentialInputTypeMaxWordVectors = True
+	limitSentenceLengthsSize = None
+	limitSentenceLengths = False
+	NLPsequentialInputTypeTrainWordVectors = False
 	wordVectorLibraryNumDimensions = 300	#https://spacy.io/models/en#en_core_web_md (300 dimensions)
 
 trainMultipleFiles = False	#can set to true for production (after testing algorithm)
@@ -69,18 +82,17 @@ else:
 	randomiseFileIndexParse = False
 
 	
-#code from ANNtf/AEANNtf;
+#code from ANNtf;
 dataset = "wikiXmlDataset"
-#if(ATNLPsequentialInputTypeMinWordVectors):
+#if(NLPsequentialInputTypeMinWordVectors):
 #	numberOfFeaturesPerWord = 1000	#used by wordToVec
 paddingTagIndex = 0.0	#not used
-debugUseSmallSequentialInputDataset = False
 if(debugUseSmallSequentialInputDataset):
-	dataset4FileNameStart = "Xdataset4PartSmall"
+	dataset4FileNameXstart = "Xdataset4PartSmall"
 else:
-	dataset4FileNameStart = "Xdataset4Part"
+	dataset4FileNameXstart = "Xdataset4Part"
 xmlDatasetFileNameEnd = ".xml"
-def loadDataset(fileIndex):
+def loadDataset(fileIndex, textualDatasetLoadPerformProcessing=True):
 
 	global numberOfFeaturesPerWord
 	global paddingTagIndex
@@ -100,29 +112,35 @@ def loadDataset(fileIndex):
 		else:
 			datasetType2FileName = dataset2FileName
 	elif(dataset == "wikiXmlDataset"):
-		datasetType4FileName = dataset4FileNameStart + fileIndexStr + xmlDatasetFileNameEnd
-			
+		datasetType4FileName = dataset4FileNameXstart + fileIndexStr + xmlDatasetFileNameEnd
+
 	numberOfLayers = 0
 	if(dataset == "POStagSequence"):
-		numberOfFeaturesPerWord, paddingTagIndex, datasetNumFeatures, datasetNumClasses, datasetNumExamples, train_xTemp, train_yTemp, test_xTemp, test_yTemp = ANNtf2_loadDataset.loadDatasetType1(datasetType1FileNameX, datasetType1FileNameY)
+		numberOfFeaturesPerWord, paddingTagIndex, datasetNumFeatures, datasetNumClasses, datasetNumExamples, train_x, train_y, test_x, test_y = ANNtf2_loadDataset.loadDatasetType1(datasetType1FileNameX, datasetType1FileNameY, addOnlyPriorUnidirectionalPOSinputToTrain)
+		if(trainDataIncludesSentenceOutOfBoundsIndex):
+			datasetNumClasses = datasetNumClasses + 1
 	elif(dataset == "POStagSentence"):
-		numberOfFeaturesPerWord, paddingTagIndex, datasetNumFeatures, datasetNumClasses, datasetNumExamples, train_xTemp, train_yTemp, test_xTemp, test_yTemp = ANNtf2_loadDataset.loadDatasetType3(datasetType3FileNameX, generatePOSunambiguousInput, onlyAddPOSunambiguousInputToTrain, useSmallSentenceLengths)
+		numberOfFeaturesPerWord, paddingTagIndex, datasetNumFeatures, datasetNumClasses, datasetNumExamples, train_x, train_y, test_x, test_y = ANNtf2_loadDataset.loadDatasetType3(datasetType3FileNameX, generatePOSunambiguousInput, onlyAddPOSunambiguousInputToTrain, limitSentenceLengthsSize)
 	elif(dataset == "SmallDataset"):
-		datasetNumFeatures, datasetNumClasses, datasetNumExamples, train_xTemp, train_yTemp, test_xTemp, test_yTemp = ANNtf2_loadDataset.loadDatasetType2(datasetType2FileName, datasetClassColumnFirst)
+		datasetNumFeatures, datasetNumClasses, datasetNumExamples, train_x, train_y, test_x, test_y = ANNtf2_loadDataset.loadDatasetType2(datasetType2FileName, datasetClassColumnFirst)
 		numberOfFeaturesPerWord = None
 		paddingTagIndex = None
 	elif(dataset == "wikiXmlDataset"):
-		articles = ANNtf2_loadDataset.loadDatasetType4(datasetType4FileName, ATNLPsequentialInputTypesMaxLength, useSmallSentenceLengths,  ATNLPsequentialInputTypeTrainWordVectors)
+		articles = ANNtf2_loadDataset.loadDatasetType4(datasetType4FileName, limitSentenceLengths, limitSentenceLengthsSize, NLPsequentialInputTypeTrainWordVectors, NLPsequentialInputTypeTokeniseWords)
+		if(textualDatasetLoadPerformProcessing):
+			numberOfFeaturesPerWord, paddingTagIndex, datasetNumFeatures, datasetNumClasses, datasetNumExamples, train_x, train_y, test_x, test_y = ANNtf2_loadDataset.convertArticlesTreeToSentencesWordVectors(articles, limitSentenceLengthsSize)
 
-	if(dataset == "wikiXmlDataset"):
+	if((dataset == "wikiXmlDataset") and not textualDatasetLoadPerformProcessing):
 		return articles
 	else:
-		return numberOfFeaturesPerWord, paddingTagIndex, datasetNumFeatures, datasetNumClasses, datasetNumExamples, train_xTemp, train_yTemp, test_xTemp, test_yTemp
+		return numberOfFeaturesPerWord, paddingTagIndex, datasetNumFeatures, datasetNumClasses, datasetNumExamples, train_x, train_y, test_x, test_y
 
 
 def trainSequentialInput(trainMultipleFiles=False):
 	
-	ATNLPtf_normalisation.constructPOSdictionary()	#required for ATNLPtf_normalisation:ATNLPtf_getAllPossiblePosTags.getAllPossiblePosTags(word)
+	if(algorithmATNLP == "normaliseInputVectors"):
+		ATNLPtf_normalisation.constructPOSdictionary()	#required for ATNLPtf_normalisation:ATNLPtf_getAllPossiblePosTags.getAllPossiblePosTags(word)
+	#elif(algorithmATNLP == "generateGraph"):	#use spacy POS detection (whole sentence) instead of nltk pos detection
 	
 	networkIndex = 1	#assert numberOfNetworks = 1
 	fileIndexTemp = 0	#assert trainMultipleFiles = False
@@ -142,7 +160,7 @@ def trainSequentialInput(trainMultipleFiles=False):
 		#fileIndex = 0
 		#trainMultipleFiles code;
 		if(randomiseFileIndexParse):
-			fileIndexShuffledArray = generateRandomisedIndexArray(fileIndexFirst, fileIndexLast)
+			fileIndexShuffledArray = ANNtf2_loadDataset.generateRandomisedIndexArray(fileIndexFirst, fileIndexLast)
 		for f in range(minFileIndex, maxFileIndex+1):
 			if(randomiseFileIndexParse):
 				fileIndex = fileIndexShuffledArray[f]
@@ -151,10 +169,8 @@ def trainSequentialInput(trainMultipleFiles=False):
 
 			#ATNLP specific code;
 							
-			articles = loadDataset(fileIndex)
-					
-			#numberOfFeaturesPerWord, paddingTagIndex, datasetNumFeatures, datasetNumClasses, datasetNumExamples, train_x, train_y, test_x, test_y
-			
+			articles = loadDataset(fileIndex, textualDatasetLoadPerformProcessing=False)	#do not perform processing of textual dataset during load (word vector extraction)
+								
 			#print("articles = ", articles)
 			#print("listDimensions(articles) = ", listDimensions(articles))
 			
@@ -162,24 +178,25 @@ def trainSequentialInput(trainMultipleFiles=False):
 				ATNLPtf_processingBatchAndMultiAbstractionLevel.processingBatchAndMultiAbstractionLevel(articles)
 			else:
 				processingSimple(articles)
-				
+					
+						
 def processingSimple(articles):
-	if(ATNLPsequentialInputTypeMaxWordVectors):
-		#flatten any higher level abstractions defined in ATNLPsequentialInputTypeMax down to word vector lists (sentences);
-		articles = ATNLPtf_normalisation.flattenNestedListToSentences(articles)
-				
-	for sentence in articles:
-		trainSequentialInputNetworkSimple(sentence)
+	if(NLPsequentialInputTypeMaxWordVectors):
+		#flatten any higher level abstractions defined in NLPsequentialInputTypeMax down to word vector lists (sentences);
+		articles = ANNtf2_loadDataset.flattenNestedListToSentences(articles)
+						
+	for sentenceIndex, sentence in enumerate(articles):
+		trainSequentialInputNetworkSimple(sentenceIndex, sentence)
 	
-def trainSequentialInputNetworkSimple(textContentList):
+def trainSequentialInputNetworkSimple(sentenceIndex, textContentList):
 
-	inputVectorList = ATNLPtf_normalisation.generateWordVectorInputList(textContentList, wordVectorLibraryNumDimensions)	#numberSequentialInputs x inputVecDimensions
-
-	#normalise input vectors
-	normalisedInputVectorList = ATNLPtf_normalisation.normaliseInputVectorUsingWords(inputVectorList, textContentList)	#normalise length
+	if(algorithmATNLP == "normaliseInputVectors"):
+		inputVectorList = ANNtf2_loadDataset.generateWordVectorInputList(textContentList, wordVectorLibraryNumDimensions)	#numberSequentialInputs x inputVecDimensions
+		normalisedInputVectorList = ATNLPtf_normalisation.normaliseInputVectorUsingWords(inputVectorList, textContentList)	#normalise length
+		#network propagation (TODO);
+	elif(algorithmATNLP == "generateGraph"):
+		ATNLPtf_graph.generateGraph(sentenceIndex, textContentList)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence
 		
-	#network propagation (TODO);
-
 	
 if __name__ == "__main__":
 	trainSequentialInput(trainMultipleFiles=trainMultipleFiles)

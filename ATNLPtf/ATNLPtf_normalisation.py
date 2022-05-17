@@ -27,62 +27,11 @@ patchNormalisationSize = 100
 patchNormalisationSizeAntialias = True
 
 sentenceNormalisationDelimiterPOStags = [".", "CC", "IN", "TO", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ", ",", ";"]	#CHECKTHIS	#require to detect rcmod (that/which etc), additional punctuation ('', (, ), ,, --, ., :), RP particle, etc?	#keypoint/feature detection
-
-spacyWordVectorGenerator = spacy.load('en_core_web_md')	#spacy.load('en_core_web_lg')
-
-#should be defined as preprocessor defs (non-variable);
-ATNLPsequentialInputTypeCharacters = 0
-ATNLPsequentialInputTypeWords = 1
-ATNLPsequentialInputTypeSentences = 2
-ATNLPsequentialInputTypeParagraphs = 3	
-ATNLPsequentialInputTypeArticles = 4
-ATNLPsequentialInputTypes = ["characters", "words", "sentences", "paragraphs"]
-ATNLPsequentialInputNumberOfTypes = len(ATNLPsequentialInputTypes)
-
+	#nltk pos tags
+	
 def constructPOSdictionary():
 	ATNLPtf_getAllPossiblePosTags.constructPOSdictionary()	#required for getKeypoints
- 
-#code from AEANNtf;
-def flattenNestedListToSentences(articles):
-	articlesFlattened = []
-	nestedList = articles
-	for ATNLPsequentialInputTypeIndex in range(ATNLPsequentialInputTypeArticles, ATNLPsequentialInputTypeSentences, -1):
-		#print("ATNLPsequentialInputTypeIndex = ", ATNLPsequentialInputTypeIndex)
-		flattenedList = []
-		for content in nestedList:
-			flattenedList.extend(content)
-		#print("flattenedList = ", flattenedList)
-		nestedList = flattenedList	#for recursion
-	ATNLPsequentialInputTypeMaxTemp = ATNLPsequentialInputTypeWords
-	articlesFlattened = nestedList
-	#print("articles = ", articles)
-	#print("listDimensions(articlesFlattened) = ", listDimensions(articlesFlattened))
-	return articlesFlattened
-			
-def generateWordVectorInputList(textContentList, ATNLPsequentialInputDimensions):
-	inputVectorList = []
-	for word in textContentList:
-		#print("word = ", word)
-		doc = spacyWordVectorGenerator(word)
-		wordVectorList = doc[0].vector	#verify type numpy
-		wordVector = np.array(wordVectorList)
-		#print("word = ", word, " wordVector = ", wordVector)
-		inputVectorList.append(wordVector)
-	return inputVectorList
-	
-#code from AEANNtf;
-def generateRandomisedIndexArray(indexFirst, indexLast, arraySize=None):
-	fileIndexArray = np.arange(indexFirst, indexLast+1, 1)
-	#print("fileIndexArray = " + str(fileIndexArray))
-	if(arraySize is None):
-		np.random.shuffle(fileIndexArray)
-		fileIndexRandomArray = fileIndexArray
-	else:
-		fileIndexRandomArray = random.sample(fileIndexArray.tolist(), arraySize)
-	
-	#print("fileIndexRandomArray = " + str(fileIndexRandomArray))
-	return fileIndexRandomArray
-			
+ 		
 def normaliseInputVectorUsingWords(inputVectorList, textWordList):
 	#generates sets of normalised 
 	print("textWordList = ", textWordList)
