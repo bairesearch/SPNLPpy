@@ -22,6 +22,12 @@ import spacy
 spacyWordVectorGenerator = spacy.load('en_core_web_md')	#spacy.load('en_core_web_lg')
 import ANNtf2_loadDataset
 import ATNLPtf_getAllPossiblePosTags
+import networkx as nx
+import matplotlib.pyplot as plt
+
+drawGraph = True
+if(drawGraph):
+	graph = nx.Graph()
 
 #calculateFrequencyConnection method: calculates frequency of co-occurance of words/subsentences in corpus 
 calculateConnectionFrequencyUsingWordVectorSimilarity = True		#CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
@@ -56,7 +62,7 @@ graphNodeDictionary = {}	#dict indexed by lemma, every entry is a dictionary of 
 	#this is used for visualisation/fast lookup purposes only - can trace node graphNodeTargets/graphNodeSources instead
 
 class GraphNode:
-	def __init__(self, instanceID, word, lemma, wordVector, conceptRecency, posTag, nodeGraphType, activationTime, w, wMin, wMax):
+	def __init__(self, instanceID, word, lemma, wordVector, conceptRecency, posTag, nodeGraphType, activationTime, w, wMin, wMax, treeLevel):
 		self.instanceID = instanceID
 		self.word = word
 		self.lemma = lemma
@@ -68,6 +74,7 @@ class GraphNode:
 		self.w = w #temporary sentence word index (used for reference resolution only)
 		self.wMin = wMin	#temporary sentence word index (used for reference resolution only) - min of all hidden nodes
 		self.wMax = wMax	#temporary sentence word index (used for reference resolution only) - max of all hidden nodes
+		self.treeLevel = treeLevel
 		self.referenceSentenceTreeArtificial = False	#temporary flag: node has been reference by current sentence (used for reference resolution only)
 		#self.activationLevel = 0.0	#used to calculate recency
 		#self.frequency = None	#float
@@ -82,7 +89,10 @@ def generateGraph(sentenceIndex, sentence):
 	print("\n\ngenerateGraph: sentenceIndex = ", sentenceIndex, "; ", sentence)
 	
 	currentTime = calculateActivationTime(sentenceIndex)
-	
+
+	if(drawGraph):
+		graph.clear()	#only draw graph for single sentence
+		
 	sentenceNodeList = []	#local/temporary list of sentence instance nodes (before reference resolution)
 	#sentenceLeafNodeList = []	#local/temporary list of sentence instance nodes (before reference resolution)
 	connectivityStackNodeList = []	#temporary list of nodes on connectivity stack
@@ -101,22 +111,26 @@ def generateGraph(sentenceIndex, sentence):
 		posTag = getTokenPOStag(token)
 		activationTime = calculateActivationTime(sentenceIndex)
 		nodeGraphType = graphNodeTypeLeaf
+		treeLevel = 0
 		
 		if(addConceptNodesToDatabase):
 			#add concept to dictionary (if non-existent) - not currently used;
 			if lemma not in graphNodeDictionary:
 				instanceID = conceptID
-				conceptNode = GraphNode(instanceID, word, lemma, wordVector, conceptRecency, posTag, nodeGraphType, currentTime, w, w, w)
+				conceptNode = GraphNode(instanceID, word, lemma, wordVector, conceptRecency, posTag, nodeGraphType, currentTime, w, w, w, treeLevel)
 				addInstanceNodeToGraph(lemma, instanceID, conceptNode)
 
 		#add instance to local/temporary sentenceNodeList (reference resolution is required before adding nodes to graph);
 		instanceIDprelim = getNewInstanceID(lemma)	#same instance id will be assigned to identical lemmas in sentence (which is not approprate in the case they refer to independent instances) - will be reassign instance id after reference resolution
-		instanceNode = GraphNode(instanceIDprelim, word, lemma, wordVector, conceptRecency, posTag, nodeGraphType, currentTime, w, w, w)
+		instanceNode = GraphNode(instanceIDprelim, word, lemma, wordVector, conceptRecency, posTag, nodeGraphType, currentTime, w, w, w, treeLevel)
 		print("create new instanceNode; ", instanceNode.lemma, ": instanceID=", instanceNode.instanceID)
 
 		sentenceNodeList.append(instanceNode)
 		#sentenceLeafNodeList.append(instanceNode)
 		connectivityStackNodeList.append(instanceNode)
+		
+		if(drawGraph):
+			graph.add_node(lemma, pos=(w, treeLevel))
 
 	#add connections to local/isolated/temporary graph (syntactical tree);
 	if(sentenceLength > 1):
@@ -162,18 +176,25 @@ def generateGraph(sentenceIndex, sentence):
 			posTag = None
 			activationTime = average(connectionNode1.activationTime, connectionNode2.activationTime) 		#calculateActivationTime(sentenceIndex)
 			nodeGraphType = graphNodeTypeHidden
+			treeLevel = max(connectionNode1.treeLevel, connectionNode2.treeLevel) + 1
+
 			w = average(connectionNode1.w, connectionNode2.w)
 			wMin = min(connectionNode1.wMin, connectionNode2.wMin)
 			wMax = max(connectionNode1.wMax, connectionNode2.wMax)
 			
 			instanceIDprelim = getNewInstanceID(lemma)
-			hiddenNode = GraphNode(instanceIDprelim, word, lemma, wordVector, conceptRecency, posTag, nodeGraphType, currentTime, w, wMin, wMax)
+			hiddenNode = GraphNode(instanceIDprelim, word, lemma, wordVector, conceptRecency, posTag, nodeGraphType, currentTime, w, wMin, wMax, treeLevel)
 			createGraphConnectionWrapper(hiddenNode, connectionNode1, connectionNode2, connectionDirection, addToConnectionsDictionary=False)
 
 			connectivityStackNodeList.remove(connectionNode1)
 			connectivityStackNodeList.remove(connectionNode2)
 			connectivityStackNodeList.append(hiddenNode)
 
+			if(drawGraph):
+				graph.add_node(lemma, pos=(w, treeLevel))
+				graph.add_edge(hiddenNode.lemma, connectionNode1.lemma)
+				graph.add_edge(hiddenNode.lemma, connectionNode2.lemma)
+			
 			if(len(connectivityStackNodeList) == 1):
 				headNodeFound = True
 				hiddenNode.graphNodeType = graphNodeTypeHead	#reference set delimiter (captures primary subject/action/object of sentence clause)
@@ -197,7 +218,10 @@ def generateGraph(sentenceIndex, sentence):
 				#instanceID = getNewInstanceID(lemma)
 				addInstanceNodeToGraph(node1.lemma, node1.instanceID, node1)
 	
-
+	if(drawGraph):
+		pos = nx.get_node_attributes(graph, 'pos')
+		nx.draw(graph, pos, with_labels=True)
+		plt.show()
 
 def average(number1, number2):
 	return (number1 + number2) / 2.0

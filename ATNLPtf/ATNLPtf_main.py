@@ -14,6 +14,8 @@ source activate anntf2
 conda install -c tensorflow tensorflow=2.3
 conda install nltk
 conda install spacy
+conda install networkx
+pip install matplotlib==2.2.3
 python3 -m spacy download en_core_web_md
 
 # Usage:
