@@ -53,7 +53,7 @@ else:
 
 if(AEANNtf_algorithm.networkEqualInputVectorDimensions):
 	if(NLPsequentialInputTypeMinWordVectors):
-		wordVectorLibraryNumDimensions = 300	#https://spacy.io/models/en#en_core_web_md (300 dimensions)
+		wordVectorLibraryNumDimensions = ANNtf2_loadDataset.wordVectorLibraryNumDimensions	#https://spacy.io/models/en#en_core_web_md (300 dimensions)
 		inputVectorNumDimensions = wordVectorLibraryNumDimensions
 	else:
 		asciiNumberCharacters = 128

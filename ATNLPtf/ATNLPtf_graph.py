@@ -21,7 +21,6 @@ import numpy as np
 import spacy
 spacyWordVectorGenerator = spacy.load('en_core_web_md')	#spacy.load('en_core_web_lg')
 import ANNtf2_loadDataset
-import ATNLPtf_getAllPossiblePosTags
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -31,12 +30,12 @@ if(drawGraph):
 
 #calculateFrequencyConnection method: calculates frequency of co-occurance of words/subsentences in corpus 
 calculateConnectionFrequencyUsingWordVectorSimilarity = True		#CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
-#CHECKTHIS; if subgraph is not symmetrical, will incorrectly weigh dynamic wordvector/recency calculations
-calculateConnectionFrequencyBasedOnNodeSentenceSubgraphs = False	#optional (not required to compare hidden node similarity as artificial word vectors are generated for new hidden nodes in sentence)	#else calculateWordVectorSimilarity (flat)	#compares similarity of subgraphs of sentence nodes (rather than similarity of just the nodes themselves)
-calculateConnectionRecencyBasedOnNodeSentenceSubgraphs = False	#optional (not required to compare hidden node concept recency as artificial concept recency values are generated for new hidden nodes in sentence)		#else compareNodeRecency (flat)
+#CHECKTHIS; if subgraph is not symmetrical, will incorrectly weigh non-dynamic (iterative) wordvector/recency calculations
+calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic = True	#optional (not required to compare hidden node similarity as artificial word vectors are generated for new hidden nodes in sentence)	#else calculateWordVectorSimilarity (flat)	#compares similarity of subgraphs of sentence nodes (rather than similarity of just the nodes themselves)
+calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic = True	#optional (not required to compare hidden node concept recency as artificial concept recency values are generated for new hidden nodes in sentence)		#else compareNodeTime (flat)
 
 calculateReferenceSimilarityUsingWordVectorSimilarity = False	#else calculateReferenceSimilarityUsingIdenticalConceptsLemmasInGraph
-calculateReferenceSimilarityBasedOnNodeSentenceSubgraphs = True	#else calculateReferenceSimilarityBasedOnNodes (flat)
+calculateReferenceSimilarityBasedOnNodeSentenceSubgraphsDynamic = True	#mandatory	#else calculateReferenceSimilarityBasedOnNodes (flat)
 
 addConceptNodesToDatabase = True	#add concept to dictionary (if non-existent) - not currently used
 #contiguousNodesGraph = True 	#mandatory: nodes must be contiguous (word order)
@@ -59,15 +58,15 @@ metricThresholdToCreateReference = 1.0	#CHECKTHIS: requires calibration
 
 graphNodeDictionary = {}	#dict indexed by lemma, every entry is a dictionary of GraphNode instances indexed by instanceID (first instance is special; reserved for concept)
 #graphConnectionsDictionary = {}	#dict indexed tuples (lemma1, instanceID1, lemma2, instanceID2), every entry is a tuple of GraphNode instances/concepts (instanceNode1, instanceNode2) [directionality: 1=source, 2=target]
-	#this is used for visualisation/fast lookup purposes only - can trace node graphNodeTargets/graphNodeSources instead
+	#this is used for visualisation/fast lookup purposes only - can trace node graphNodeTargetList/graphNodeSourceList instead
 
 class GraphNode:
-	def __init__(self, instanceID, word, lemma, wordVector, conceptRecency, posTag, nodeGraphType, activationTime, w, wMin, wMax, treeLevel):
+	def __init__(self, instanceID, word, lemma, wordVector, conceptTime, posTag, nodeGraphType, activationTime, w, wMin, wMax, treeLevel):
 		self.instanceID = instanceID
 		self.word = word
 		self.lemma = lemma
 		self.wordVector = wordVector	#numpy array
-		self.conceptRecencySentenceTreeArtificial = conceptRecency
+		self.conceptTimeSentenceTreeArtificial = conceptTime
 		self.posTag = posTag	#nlp in context prediction only (not certain)
 		self.graphNodeType = nodeGraphType
 		self.activationTime = activationTime	#used to calculate recency
@@ -79,8 +78,10 @@ class GraphNode:
 		#self.activationLevel = 0.0	#used to calculate recency
 		#self.frequency = None	#float
 		#connections;
-		self.graphNodeTargets = {}	#dict indexed by lemma, every entry is a dictionary of GraphNode instances indexed by instanceID 
-		self.graphNodeSources = {}	#dict indexed by lemma, every entry is a dictionary of GraphNode instances indexed by instanceID
+		self.graphNodeTargetList = []
+		self.graphNodeSourceList = []
+		#self.graphNodeTargetDict = {}	#dict indexed by lemma, every entry is a dictionary of GraphNode instances indexed by instanceID 	#for optimised lookup by concept
+		#self.graphNodeSourceDict = {}	#dict indexed by lemma, every entry is a dictionary of GraphNode instances indexed by instanceID	#for optimised lookup by concept
 		#self.foundRecentIndex = False	#temporary var (indicates referencing a previously declared instance in the article)
 		
 	
@@ -92,9 +93,9 @@ def generateGraph(sentenceIndex, sentence):
 
 	if(drawGraph):
 		graph.clear()	#only draw graph for single sentence
-		
-	sentenceNodeList = []	#local/temporary list of sentence instance nodes (before reference resolution)
-	#sentenceLeafNodeList = []	#local/temporary list of sentence instance nodes (before reference resolution)
+
+	sentenceLeafNodeList = []	#local/temporary list of sentence instance nodes (before reference resolution)		
+	sentenceTreeNodeList = []	#local/temporary list of sentence instance nodes (before reference resolution)
 	connectivityStackNodeList = []	#temporary list of nodes on connectivity stack
 	#sentenceGraphNodeDictionary = {}	#local/isolated/temporary graph of sentence instance nodes (before reference resolution)
 		
@@ -107,7 +108,7 @@ def generateGraph(sentenceIndex, sentence):
 		word = getTokenWord(token)
 		lemma = getTokenLemma(token)
 		wordVector = getTokenWordVector(token)	#numpy word vector
-		conceptRecency = calculateConceptRecencyLeafNode(sentenceNodeList, lemma, currentTime)	#units: min time diff (not recency metric)
+		conceptTime = calculateConceptRecencyLeafNode(sentenceLeafNodeList, lemma, currentTime)	#units: min time diff (not recency metric)
 		posTag = getTokenPOStag(token)
 		activationTime = calculateActivationTime(sentenceIndex)
 		nodeGraphType = graphNodeTypeLeaf
@@ -117,16 +118,16 @@ def generateGraph(sentenceIndex, sentence):
 			#add concept to dictionary (if non-existent) - not currently used;
 			if lemma not in graphNodeDictionary:
 				instanceID = conceptID
-				conceptNode = GraphNode(instanceID, word, lemma, wordVector, conceptRecency, posTag, nodeGraphType, currentTime, w, w, w, treeLevel)
+				conceptNode = GraphNode(instanceID, word, lemma, wordVector, conceptTime, posTag, nodeGraphType, currentTime, w, w, w, treeLevel)
 				addInstanceNodeToGraph(lemma, instanceID, conceptNode)
 
-		#add instance to local/temporary sentenceNodeList (reference resolution is required before adding nodes to graph);
+		#add instance to local/temporary sentenceLeafNodeList (reference resolution is required before adding nodes to graph);
 		instanceIDprelim = getNewInstanceID(lemma)	#same instance id will be assigned to identical lemmas in sentence (which is not approprate in the case they refer to independent instances) - will be reassign instance id after reference resolution
-		instanceNode = GraphNode(instanceIDprelim, word, lemma, wordVector, conceptRecency, posTag, nodeGraphType, currentTime, w, w, w, treeLevel)
+		instanceNode = GraphNode(instanceIDprelim, word, lemma, wordVector, conceptTime, posTag, nodeGraphType, currentTime, w, w, w, treeLevel)
 		print("create new instanceNode; ", instanceNode.lemma, ": instanceID=", instanceNode.instanceID)
 
-		sentenceNodeList.append(instanceNode)
-		#sentenceLeafNodeList.append(instanceNode)
+		sentenceLeafNodeList.append(instanceNode)
+		sentenceTreeNodeList.append(instanceNode)
 		connectivityStackNodeList.append(instanceNode)
 		
 		if(drawGraph):
@@ -150,8 +151,8 @@ def generateGraph(sentenceIndex, sentence):
 						#print("node2.wMin = ", node2.wMin)
 						if(node1.wMax+1 == node2.wMin):
 							proximity = calculateProximity(node1.w, node2.w)
-							frequency = calculateFrequencyConnection(sentenceNodeList, node1, node2)
-							recency = calculateRecencyConnection(sentenceNodeList, node1, node2, currentTime)	#minimise the difference in recency between left/right node
+							frequency = calculateFrequencyConnection(sentenceTreeNodeList, node1, node2)
+							recency = calculateRecencyConnection(sentenceTreeNodeList, node1, node2, currentTime)	#minimise the difference in recency between left/right node
 							connectionMetric = calculateMetricConnection(proximity, frequency, recency)
 							if(connectionMetric > maxConnectionMetric):
 								#print("connectionMetric found")
@@ -171,8 +172,14 @@ def generateGraph(sentenceIndex, sentence):
 
 			word = connectionNode1.word + connectionNode2.word
 			lemma = connectionNode1.lemma + connectionNode2.lemma
-			wordVector = np.mean([connectionNode1.wordVector, connectionNode2.wordVector])	#CHECKTHIS; if subgraph is not symmetrical, will incorrectly weigh word vectors
-			conceptRecency = average(connectionNode1.conceptRecencySentenceTreeArtificial, connectionNode2.conceptRecencySentenceTreeArtificial) #CHECKTHIS; if subgraph is not symmetrical, will incorrectly weigh recency
+			if(calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic):
+				wordVector = None
+			else:
+				wordVector = np.mean([connectionNode1.wordVector, connectionNode2.wordVector])	#CHECKTHIS; if subgraph is not symmetrical, will incorrectly weigh word vectors
+			if(calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic):
+				conceptTime = None
+			else:
+				conceptTime = average(connectionNode1.conceptTimeSentenceTreeArtificial, connectionNode2.conceptTimeSentenceTreeArtificial) #CHECKTHIS; if subgraph is not symmetrical, will incorrectly weigh recency
 			posTag = None
 			activationTime = average(connectionNode1.activationTime, connectionNode2.activationTime) 		#calculateActivationTime(sentenceIndex)
 			nodeGraphType = graphNodeTypeHidden
@@ -183,9 +190,10 @@ def generateGraph(sentenceIndex, sentence):
 			wMax = max(connectionNode1.wMax, connectionNode2.wMax)
 			
 			instanceIDprelim = getNewInstanceID(lemma)
-			hiddenNode = GraphNode(instanceIDprelim, word, lemma, wordVector, conceptRecency, posTag, nodeGraphType, currentTime, w, wMin, wMax, treeLevel)
+			hiddenNode = GraphNode(instanceIDprelim, word, lemma, wordVector, conceptTime, posTag, nodeGraphType, currentTime, w, wMin, wMax, treeLevel)
 			createGraphConnectionWrapper(hiddenNode, connectionNode1, connectionNode2, connectionDirection, addToConnectionsDictionary=False)
 
+			sentenceTreeNodeList.append(hiddenNode)
 			connectivityStackNodeList.remove(connectionNode1)
 			connectivityStackNodeList.remove(connectionNode2)
 			connectivityStackNodeList.append(hiddenNode)
@@ -205,15 +213,14 @@ def generateGraph(sentenceIndex, sentence):
 		
 	#peform reference resolution after building syntactical tree (any instance of successful reference identification will insert syntactical tree into graph)		
 	#resolve references		
+	#CHECKTHIS limitation; only replaces highest level node in subgraph/reference set - consider replacing all nodes in subgraph/reference set
 	resolvedReferences = [False]*sentenceLength
-	for node1 in sentenceNodeList:	
+	for node1 in sentenceTreeNodeList:	
 		if(not node1.referenceSentenceTreeArtificial):
-			foundReference, referenceNode, maxSimilarity = findMostSimilarReferenceInGraph(sentenceNodeList, node1, currentTime)
-			print("findMostSimilarReferenceInGraph maxSimilarity = ", maxSimilarity)
+			foundReference, referenceNode, maxSimilarity = findMostSimilarReferenceInGraph(sentenceTreeNodeList, node1, currentTime)
 			if(foundReference and (maxSimilarity > metricThresholdToCreateReference)):
-				print("replaceReference")
-				#CHECKTHIS limitation; only replaces highest level node in reference set - consider replacing all nodes in reference set
-				replaceReference(sentenceNodeList, node1, referenceNode, currentTime)
+				print("replaceReference: findMostSimilarReferenceInGraph maxSimilarity = ", maxSimilarity)
+				replaceReference(node1, referenceNode, currentTime)
 			else:
 				#instanceID = getNewInstanceID(lemma)
 				addInstanceNodeToGraph(node1.lemma, node1.instanceID, node1)
@@ -232,6 +239,37 @@ def createSubDictionaryForConcept(dic, lemma):
 def findInstanceNodeInGraph(lemma, instanceID):
 	node = graphNodeDictionary[lemma][instanceID]
 	return node
+
+#connection:
+def createGraphConnectionWrapper(hiddenNode, node1, node2, connectionDirection, addToConnectionsDictionary=True):
+	if(connectionDirection):
+		createGraphConnection(hiddenNode, node1, node2, addToConnectionsDictionary)
+	else:
+		createGraphConnection(hiddenNode, node2, node1, addToConnectionsDictionary)
+		
+def createGraphConnection(hiddenNode, node1, node2, addToConnectionsDictionary):
+	addConnectionToNodeTargets(node1, hiddenNode)
+	addConnectionToNodeTargets(node2, hiddenNode)
+	addConnectionToNodeSources(hiddenNode, node1)
+	addConnectionToNodeSources(hiddenNode, node2)
+
+	#if(addToConnectionsDictionary):
+	#	graphConnectionKey = createGraphConnectionKey(hiddenNode, node1, node2)
+	#	graphConnectionsDictionary[graphConnectionKey] = (hiddenNode, node1, node2)
+
+#def createGraphConnectionKey(hiddenNode, node1, node2):
+#	connectionKey = (hiddenNode.lemma, hiddenNode.instanceID, node1.lemma, node1.instanceID, node2.lemma, node2.instanceID)
+#	return connectionKey
+
+def addConnectionToNodeTargets(node, nodeToConnect):
+	node.graphNodeTargetList.append(nodeToConnect)
+	#addInstanceNodeToDictionary(node.graphNodeTargetDict, nodeToConnect.lemma, nodeToConnect.instanceID, nodeToConnect)
+
+def addConnectionToNodeSources(node, nodeToConnect):
+	node.graphNodeSourceList.append(nodeToConnect)
+	#addInstanceNodeToDictionary(node.graphNodeSourceDict, nodeToConnect.lemma, nodeToConnect.instanceID, nodeToConnect)
+
+
 
 def addInstanceNodeToGraph(lemma, instanceID, node):
 	addInstanceNodeToDictionary(graphNodeDictionary, lemma, instanceID, node)
@@ -273,64 +311,72 @@ def calculateProximity(w, w2):
 
 
 
-def replaceReference(sentenceNodeList, node1, referenceNode, currentTime):
+def replaceReference(node1, referenceNode, currentTime):
 	referenceNode.activationTime = currentTime
 	
-	for instanceID1souce, node1source in node1.graphNodeSources.items():
-		for instanceID1souceTarget, node1sourceTarget in node1source.graphNodeTargets.items():
+	for node1sourceIndex, node1source in enumerate(node1.graphNodeSourceList):
+		for node1sourceTargetIndex, node1sourceTarget in enumerate(node1source.graphNodeTargetList):
 			if(node1sourceTarget == node1):
-				node1source.graphNodeTargets[instanceID1souceTarget] = referenceNode	#replace target of previous word with reference node
-	for instanceID1target, node1target in node1.graphNodeTargets.items():
-		for instanceID1targetSource, node1targetSource in node1target.graphNodeSources.items():
+				node1source.graphNodeTargetList[node1sourceTargetIndex] = referenceNode	#replace target of previous word with reference node
+	for node1targetIndex, node1target in enumerate(node1.graphNodeTargetList):
+		for node1targetSourceIndex, node1targetSource in enumerate(node1target.graphNodeSourceList):
 			if(node1targetSource == node1):
-				node1target.graphNodeSources[instanceID1targetSource] = referenceNode	#replace source of next word with reference node
+				node1target.graphNodeSourceList[node1targetSourceIndex] = referenceNode	#replace source of next word with reference node
 						
 
 
 #recency metric:
-def calculateRecencyConnection(sentenceNodeList, node1, node2, currentTime):
-	if(calculateConnectionRecencyBasedOnNodeSentenceSubgraphs):
-		subgraphArtificalRecency1 = 0
-		subgraphArtificalRecency2 = 0
-		subgraphSize1 = calculateSubgraphArtificialRecency(sentenceNodeList, node1, subgraphArtificalRecency1, 0)
-		subgraphSize2 = calculateSubgraphArtificialRecency(sentenceNodeList, node2, subgraphArtificalRecency2, 0)
-		subgraphArtificalRecency1 = subgraphArtificalRecency1, subgraphSize1
-		subgraphArtificalRecency2 = subgraphArtificalRecency2, subgraphSize2
-		timeDiffConnection = compareNodeRecency(sentenceNodeList, node1, node2)
+def calculateRecencyConnection(sentenceTreeNodeList, node1, node2, currentTime):
+	#CHECKTHIS: requires update - currently uses rudimentary combined minTimeDiff similarity comparison
+	if(calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic):
+		subgraphArtificalTime1 = calculateSubgraphArtificialTime(sentenceTreeNodeList, node1)
+		subgraphArtificalTime2 = calculateSubgraphArtificialTime(sentenceTreeNodeList, node2)
+		timeDiffConnection = compareTime(subgraphArtificalTime1, subgraphArtificalTime2)
 	else:
-		timeDiffConnection = compareNodeRecency(sentenceNodeList, node1, node2)
+		timeDiffConnection = compareNodeTime(sentenceTreeNodeList, node1, node2)
 	recencyDiffConnection = calculateRecency(timeDiffConnection)
 	return recencyDiffConnection
-
-def calculateSubgraphArtificialRecency(sentenceNodeList, node, subgraphArtificalRecency, subgraphSize):
-	subgraphArtificalRecency = subgraphArtificalRecency + subgraphNode.conceptRecencySentenceTreeArtificial
-	subgraphSize = subgraphSize + 1
-	#CHECKTHIS: requires update - currently uses rudimentary combined minTimeDiff similarity comparison
-	for subgraphInstanceID, subgraphNode in node.graphNodeSources.items():	
-		if(subgraphNode in sentenceNodeList):	#verify subgraph instance was referenced in current sentence
-			subgraphArtificalRecency, subgraphSize = calculateSubgraphArtificialRecency(sentenceNodeList, subgraphNode, subgraphArtificalRecency, subgraphSize)
-	return subgraphArtificalRecency, subgraphSize
 	
-def compareNodeRecency(sentenceNodeList, node1, node2):
-	timeDiffConnection = abs(node1.conceptRecencySentenceTreeArtificial - node2.conceptRecencySentenceTreeArtificial)
+def calculateSubgraphArtificialTime(sentenceTreeNodeList, node):
+	subgraphArtificalTime = 0
+	subgraphArtificalTime, subgraphSize = calculateSubgraphArtificialTimeRecurse(sentenceTreeNodeList, node, subgraphArtificalTime, 0)
+	subgraphArtificalTime = (subgraphArtificalTime / subgraphSize)
+	return subgraphArtificalTime
+
+def calculateSubgraphArtificialTimeRecurse(sentenceTreeNodeList, node, subgraphArtificalTime, subgraphSize):
+	if(node.graphNodeType == graphNodeTypeLeaf):
+		subgraphArtificalTime = subgraphArtificalTime + node.conceptTimeSentenceTreeArtificial
+		subgraphSize = subgraphSize + 1
+	for subgraphNode in node.graphNodeSourceList:	
+		if(subgraphNode in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
+			subgraphArtificalTime, subgraphSize = calculateSubgraphArtificialTimeRecurse(sentenceTreeNodeList, subgraphNode, subgraphArtificalTime, subgraphSize)
+	return subgraphArtificalTime, subgraphSize
+
+def compareNodeTime(sentenceTreeNodeList, node1, node2):
+	timeDiffConnection = compareTime(node1.conceptTimeSentenceTreeArtificial, node2.conceptTimeSentenceTreeArtificial)
+	return timeDiffConnection
+
+def compareTime(time1, time2):
+	timeDiffConnection = abs(time1 - time2)
 	return timeDiffConnection
 	
-def calculateSubgraphMostRecentIdenticalConnection(sentenceNodeList, node1, nodeToCompare, numberOfConnections1):
+	
+def calculateSubgraphMostRecentIdenticalConnection(sentenceTreeNodeList, node1, nodeToCompare, numberOfConnections1):
 	#TODO: verify calculate source to target connections only
-	numberOfConnections2 = calculateSubgraphNumberIdenticalConcepts2(sentenceNodeList, node1, nodeToCompare, 0)
+	numberOfConnections2 = calculateSubgraphNumberIdenticalConcepts2(sentenceTreeNodeList, node1, nodeToCompare, 0)
 	numberOfConnections1 += numberOfConnections2
-	for subgraphInstanceID1, subgraphNode1 in node1.graphNodeSources.items():	
-		if(subgraphNode1 in sentenceNodeList):	#verify subgraph instance was referenced in current sentence
-			numberOfConnections1 = calculateSubgraphNumberIdenticalConcepts1(sentenceNodeList, subgraphNode1, nodeToCompare, numberOfConnections1)
+	for subgraphNode1 in node1.graphNodeSourceList:	
+		if(subgraphNode1 in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
+			numberOfConnections1 = calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, subgraphNode1, nodeToCompare, numberOfConnections1)
 	return numberOfConnections1	
 
-def calculateConceptRecencyLeafNode(sentenceNodeList, lemma, currentTime):
-	foundMostRecentInstanceNode, mostRecentInstanceNode, mostRecentInstanceTimeDiff = findMostRecentInstance(sentenceNodeList, lemma, currentTime)
+def calculateConceptRecencyLeafNode(sentenceTreeNodeList, lemma, currentTime):
+	foundMostRecentInstanceNode, mostRecentInstanceNode, mostRecentInstanceTimeDiff = findMostRecentInstance(sentenceTreeNodeList, lemma, currentTime)
 	if(not mostRecentInstanceNode):
 		mostRecentInstanceTimeDiff = maxTimeDiff
 	return mostRecentInstanceTimeDiff
 	
-def findMostRecentInstance(sentenceNodeList, lemma, currentTime):	
+def findMostRecentInstance(sentenceTreeNodeList, lemma, currentTime):	
 	#print("findMostRecentInstance") 
 	#calculates recency of most recent instance, and returns this instance
 	foundMostRecentInstanceNode = False
@@ -341,7 +387,7 @@ def findMostRecentInstance(sentenceNodeList, lemma, currentTime):
 		minTimeDiff = maxTimeDiff
 		mostRecentInstanceNode = None
 		for instanceID2, node2 in instanceDict2.items():
-			if(node2.activationTime != currentTime):	#ignore instances that were added from same sentence	#OR: node2 is not in(sentenceNodeList)
+			if(node2.activationTime != currentTime):	#ignore instances that were added from same sentence	#OR: node2 is not in(sentenceTreeNodeList)
 				timeDiff = calculateTimeDiffAbsolute(node2.activationTime, currentTime)
 				#print("timeDiff = ", timeDiff)
 				if(timeDiff < minTimeDiff):
@@ -374,135 +420,127 @@ def calculateTimeDiff(recency):
 	return timeDiff	
 
 
-#connection:
-def createGraphConnectionWrapper(hiddenNode, node1, node2, connectionDirection, addToConnectionsDictionary=True):
-	if(connectionDirection):
-		createGraphConnection(hiddenNode, node1, node2, addToConnectionsDictionary)
-	else:
-		createGraphConnection(hiddenNode, node2, node1, addToConnectionsDictionary)
-		
-def createGraphConnection(hiddenNode, node1, node2, addToConnectionsDictionary):
-	addInstanceNodeToDictionary(node1.graphNodeTargets, hiddenNode.lemma, hiddenNode.instanceID, hiddenNode)
-	addInstanceNodeToDictionary(node2.graphNodeTargets, hiddenNode.lemma, hiddenNode.instanceID, hiddenNode)
-	addInstanceNodeToDictionary(hiddenNode.graphNodeSources, node1.lemma, node1.instanceID, node1)
-	addInstanceNodeToDictionary(hiddenNode.graphNodeSources, node2.lemma, node2.instanceID, node2)
 
-	#if(addToConnectionsDictionary):
-	#	graphConnectionKey = createGraphConnectionKey(hiddenNode, node1, node2)
-	#	graphConnectionsDictionary[graphConnectionKey] = (hiddenNode, node1, node2)
-
-#def createGraphConnectionKey(hiddenNode, node1, node2):
-#	connectionKey = (hiddenNode.lemma, hiddenNode.instanceID, node1.lemma, node1.instanceID, node2.lemma, node2.instanceID)
-#	return connectionKey
 
 #def identifyNodeType(node):
 
 
 #reference similarity:
-def findMostSimilarReferenceInGraph(sentenceNodeList, node1, currentTime):
+def findMostSimilarReferenceInGraph(sentenceTreeNodeList, node1, currentTime):
 	foundReference = False
 	referenceNode = None
 	maxSimilarity = 0
 
-	node1ConceptInstances = graphNodeDictionary[node1.lemma]	#current limitation: only reference identical lemmas [future allow referencing based on word vector similarity]
-	for instanceID1, instanceNode1 in node1ConceptInstances.items():
-		if(instanceNode1.activationTime != currentTime):	#ignore instances that were added from same sentence	#OR: instanceNode1 is not in(sentenceNodeList)
-			similarity = compareNodeReferenceSimilarity(sentenceNodeList, node1, instanceNode1)
-			recency = calculateRecencyAbsolute(instanceNode1.activationTime, currentTime)
-			metric = calculateMetricReference(similarity, recency)
-			if(metric > maxSimilarity):
-				maxSimilarity = metric
-				referenceNode = instanceNode1
-				foundReference = True
-				
+	if(node1.lemma in graphNodeDictionary):
+		print("node1.lemma = ", node1.lemma)
+		node1ConceptInstances = graphNodeDictionary[node1.lemma]	#current limitation: only reference identical lemmas [future allow referencing based on word vector similarity]
+		for instanceID1, instanceNode1 in node1ConceptInstances.items():
+			if(instanceNode1.activationTime != currentTime):	#ignore instances that were added from same sentence	#OR: instanceNode1 is not in(sentenceTreeNodeList)
+				similarity = compareNodeReferenceSimilarity(sentenceTreeNodeList, node1, instanceNode1)
+				recency = calculateRecencyAbsolute(instanceNode1.activationTime, currentTime)
+				metric = calculateMetricReference(similarity, recency)
+				if(metric > maxSimilarity):
+					maxSimilarity = metric
+					referenceNode = instanceNode1
+					foundReference = True
+
 	return foundReference, referenceNode, maxSimilarity
 	
-def compareNodeReferenceSimilarity(sentenceNodeList, node1, node2):
+def compareNodeReferenceSimilarity(sentenceTreeNodeList, node1, node2):
 	if(calculateReferenceSimilarityUsingWordVectorSimilarity):
-		similarity = compareNodeWordVectorSimilarity(sentenceNodeList, node1, node2)
+		similarity = compareNodeWordVectorSimilarity(sentenceTreeNodeList, node1, node2)
 	else:
-		similarity = compareNodeIdenticalConceptSimilarity(sentenceNodeList, node1, node2)
+		similarity = compareNodeIdenticalConceptSimilarity(sentenceTreeNodeList, node1, node2)
 	#print("compareNodeReferenceSimilarity similarity = ", similarity)
 	return similarity
 
-def compareNodeIdenticalConceptSimilarity(sentenceNodeList, node1, node2):
-	if(calculateReferenceSimilarityBasedOnNodeSentenceSubgraphs):
-		similarity = calculateSubgraphNumberIdenticalConcepts1(sentenceNodeList, node1, node2, 0)			
+def compareNodeIdenticalConceptSimilarity(sentenceTreeNodeList, node1, node2):
+	if(calculateReferenceSimilarityBasedOnNodeSentenceSubgraphsDynamic):
+		similarity = calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, node1, node2, 0)			
 	else:
-		similarity = calculateNumberIdenticalConcepts(node1, node2)
+		print("compareNodeIdenticalConceptSimilarity currently requires calculateReferenceSimilarityBasedOnNodeSentenceSubgraphsDynamic - no alternate method coded")
+		exit()
+		#similarity = calculateNumberIdenticalConcepts(node1, node2)
 	return similarity
 
 #compares all nodes in node1 subgraph (to nodeToCompare subgraphs)
 #recurse node1 subgraph
-def calculateSubgraphNumberIdenticalConcepts1(sentenceNodeList, node1, nodeToCompare, numberOfConnections1):
+def calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, node1, nodeToCompare, numberOfConnections1):
 	#TODO: verify calculate source to target connections only
-	numberOfConnections2 = calculateSubgraphNumberIdenticalConcepts2(sentenceNodeList, node1, nodeToCompare, 0)
+	numberOfConnections2 = calculateSubgraphNumberIdenticalConcepts2(sentenceTreeNodeList, node1, nodeToCompare, 0)
 	numberOfConnections1 += numberOfConnections2
-	for subgraphInstanceID1, subgraphNode1 in node1.graphNodeSources.items():	
-		if(subgraphNode1 in sentenceNodeList):	#verify subgraph instance was referenced in current sentence
-			numberOfConnections1 = calculateSubgraphNumberIdenticalConcepts1(sentenceNodeList, subgraphNode1, nodeToCompare, numberOfConnections1)
+	for subgraphNode1 in node1.graphNodeSourceList:	
+		if(subgraphNode1 in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
+			numberOfConnections1 = calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, subgraphNode1, nodeToCompare, numberOfConnections1)
 	return numberOfConnections1
 
 #compares node1 with all nodes in node2 subgraph
 #recurse node2 subgraph
-def calculateSubgraphNumberIdenticalConcepts2(sentenceNodeList, node1, node2, numberOfConnections):
+def calculateSubgraphNumberIdenticalConcepts2(sentenceTreeNodeList, node1, node2, numberOfConnections):
 	#TODO: verify calculate source to target connections only
 	if(node1.lemma == node2.lemma):
 		numberOfConnections += 1
-	for subgraphInstanceID2, subgraphNode2 in node2.graphNodeSources.items():	
-		if(subgraphNode2 not in sentenceNodeList):	#verify subgraph instance was not referenced in current sentence
-			numberOfConnections = calculateSubgraphNumberIdenticalConcepts2(sentenceNodeList, node1, subgraphNode2, numberOfConnections)
+	for subgraphNode2 in node2.graphNodeSourceList:	
+		if(subgraphNode2 not in sentenceTreeNodeList):	#verify subgraph instance was not referenced in current sentence
+			numberOfConnections = calculateSubgraphNumberIdenticalConcepts2(sentenceTreeNodeList, node1, subgraphNode2, numberOfConnections)
 	return numberOfConnections
 		
-def calculateNumberIdenticalConcepts(node, nodeEnd):
-	#TODO: verify calculate source to target connections only
-	numberOfConnections = 0
-	instanceDict1 = graphNodeDictionary[node.lemma]
-	for instanceID1, node1 in instanceDict1.items():
-		for instanceID2, node2 in node1.graphNodeTargets.items():
-			if(node2.lemma == nodeEnd.lemma):
-				numberOfConnections += 1
-	return numberOfConnections
+#def calculateNumberIdenticalConcepts(node, nodeEnd):
+#	#CHECKTHIS: verify calculate source to target connections only
+#	numberOfConnections = 0
+#	instanceDict1 = graphNodeDictionary[node.lemma]
+#	for instanceID1, node1 in instanceDict1.items():
+#		for node2 in node1.graphNodeTargetList:
+#			if(node1.lemma == nodeEnd.lemma):
+#				numberOfConnections += 1
+#	return numberOfConnections
 	
 
 #connection similarity:
-def calculateFrequencyConnection(sentenceNodeList, node1, node2):
+def calculateFrequencyConnection(sentenceTreeNodeList, node1, node2):
 	#CHECKTHIS; note compares node subgraph source components (not target components)
-	frequency = compareNodeConnectionSimilarity(sentenceNodeList, node1, node2)	 #CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
+	frequency = compareNodeConnectionSimilarity(sentenceTreeNodeList, node1, node2)	 #CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
 	return frequency
 
-def compareNodeConnectionSimilarity(sentenceNodeList, node1, node2):
+def compareNodeConnectionSimilarity(sentenceTreeNodeList, node1, node2):
 	if(calculateConnectionFrequencyUsingWordVectorSimilarity):
-		similarity = compareNodeWordVectorSimilarity(sentenceNodeList, node1, node2)		#compareNodeCorpusAssociationFrequency
+		similarity = compareNodeWordVectorSimilarity(sentenceTreeNodeList, node1, node2)		#compareNodeCorpusAssociationFrequency
 	else:
 		print("compareNodeCorpusAssociationFrequency currently requires calculateConnectionFrequencyUsingWordVectorSimilarity - no alternate method coded")
 		exit()
 	return similarity
 
-def compareNodeWordVectorSimilarity(sentenceNodeList, node1, node2):
-	if(calculateConnectionFrequencyBasedOnNodeSentenceSubgraphs):
-		subgraphArtificalWordVector1 = np.zeros(np.shape(node1.wordVector))
-		subgraphArtificalWordVector2 = np.zeros(np.shape(node2.wordVector))
-		subgraphSize1 = calculateSubgraphArtificialWordVector(sentenceNodeList, node1, subgraphArtificalWordVector1, 0)
-		subgraphSize2 = calculateSubgraphArtificialWordVector(sentenceNodeList, node2, subgraphArtificalWordVector2, 0)
-		subgraphArtificalWordVector1 = np.divide(subgraphArtificalWordVector1, float(subgraphSize1))
-		subgraphArtificalWordVector2 = np.divide(subgraphArtificalWordVector2, float(subgraphSize2))
-		similarity = calculateWordVectorSimilarity(subgraphArtificalWordVector1, subgraphArtificalWordVector2)		
-	else:
-		similarity = calculateWordVectorSimilarity(node1.wordVector, node2.wordVector)
+def compareNodeWordVectorSimilarity(sentenceTreeNodeList, node1, node2):
+	wordVectorDiff = compareNodeWordVector(sentenceTreeNodeList, node1, node2)
+	similarity = calculateWordVectorSimilarity(wordVectorDiff)
 	return similarity
+	
+def compareNodeWordVector(sentenceTreeNodeList, node1, node2):
+	if(calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic):
+		subgraphArtificalWordVector1 = calculateSubgraphArtificialWordVector(sentenceTreeNodeList, node1)
+		subgraphArtificalWordVector2 = calculateSubgraphArtificialWordVector(sentenceTreeNodeList, node2)
+		wordVectorDiff = compareWordVectors(subgraphArtificalWordVector1, subgraphArtificalWordVector2)		
+	else:
+		wordVectorDiff = compareWordVectors(node1.wordVector, node2.wordVector)
+	return wordVectorDiff
 
-def calculateSubgraphArtificialWordVector(sentenceNodeList, node, subgraphArtificalWordVector, subgraphSize):
+def calculateSubgraphArtificialWordVector(sentenceTreeNodeList, node):
+	subgraphArtificalWordVector = np.zeros(shape=ANNtf2_loadDataset.wordVectorLibraryNumDimensions)
+	subgraphArtificalWordVector, subgraphSize = calculateSubgraphArtificialWordVectorRecurse(sentenceTreeNodeList, node, subgraphArtificalWordVector, 0)	
+	subgraphArtificalWordVector = np.divide(subgraphArtificalWordVector, float(subgraphSize))
+	return subgraphArtificalWordVector
+
+def calculateSubgraphArtificialWordVectorRecurse(sentenceTreeNodeList, node, subgraphArtificalWordVector, subgraphSize):
 	#CHECKTHIS: requires update - currently uses rudimentary combined word vector similarity comparison
-	subgraphArtificalWordVector = np.add(subgraphArtificalWordVector, node.wordVector)
-	subgraphSize = subgraphSize + 1
-	for subgraphInstanceID, subgraphNode in node.graphNodeSources.items():	
-		if(subgraphNode in sentenceNodeList):	#verify subgraph instance was referenced in current sentence
-			subgraphArtificalWordVector, subgraphSize = calculateSubgraphArtificialWordVector(sentenceNodeList, subgraphNode, subgraphArtificalWordVector, subgraphSize)
+	if(node.graphNodeType == graphNodeTypeLeaf):
+		subgraphArtificalWordVector = np.add(subgraphArtificalWordVector, node.wordVector)
+		subgraphSize = subgraphSize + 1
+	for subgraphNode in node.graphNodeSourceList:	
+		if(subgraphNode in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
+			subgraphArtificalWordVector, subgraphSize = calculateSubgraphArtificialWordVectorRecurse(sentenceTreeNodeList, subgraphNode, subgraphArtificalWordVector, subgraphSize)
 	return subgraphArtificalWordVector, subgraphSize
 	
-def calculateWordVectorSimilarity(wordVector1, wordVector2):
-	wordVectorDiff = compareWordVectors(wordVector1, wordVector2)
+def calculateWordVectorSimilarity(wordVectorDiff):
 	similarity = 1.0 - wordVectorDiff
 	#print("similarity = ", similarity)
 	return similarity
@@ -532,6 +570,8 @@ def getTokenWord(token):
 	
 def getTokenLemma(token):
 	lemma = token.lemma_
+	if(token.lemma_ == '-PRON-'):
+		lemma = token.text	#https://stackoverflow.com/questions/56966754/how-can-i-make-spacy-not-produce-the-pron-lemma
 	return lemma
 		
 def getTokenWordVector(token):
