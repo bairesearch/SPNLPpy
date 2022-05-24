@@ -150,12 +150,13 @@ def generateGraph(sentenceIndex, sentence):
 						#print("node1.wMax = ", node1.wMax)
 						#print("node2.wMin = ", node2.wMin)
 						if(node1.wMax+1 == node2.wMin):
-							proximity = calculateProximity(node1.w, node2.w)
+							print("calculateMetricConnection: node1.lemma = ", node1.lemma, ", node2.lemma = ", node2.lemma)
+							proximity = calculateProximityConnection(node1.w, node2.w)
 							frequency = calculateFrequencyConnection(sentenceTreeNodeList, node1, node2)
 							recency = calculateRecencyConnection(sentenceTreeNodeList, node1, node2, currentTime)	#minimise the difference in recency between left/right node
 							connectionMetric = calculateMetricConnection(proximity, frequency, recency)
 							if(connectionMetric > maxConnectionMetric):
-								#print("connectionMetric found")
+								print("connectionMetric found")
 								connectionFound = True
 								maxConnectionMetric = connectionMetric
 								connectionNode1 = node1
@@ -295,18 +296,16 @@ def calculateMetricReference(similarity, recency):
 		
 def calculateMetricConnection(proximity, frequency, recency):
 	metric = proximity*frequency*recency #CHECKTHIS: requires calibration - normalisation of factors is required
-	#print("\tproximity = ", proximity)
-	#print("\tfrequency = ", frequency)
-	#print("\trecency = ", recency)
-	#print("\t\tmetric = ", metric)
+	print("\t\tcalculateMetricConnection: metric = ", metric, "; proximity = ", proximity, ", frequency = ", frequency, ", recency = ", recency)
 	return metric
 	
 def calculateActivationTime(sentenceIndex):
 	activationTime = sentenceIndex
 	return activationTime
 
-def calculateProximity(w, w2):
-	proximity = abs(w-w2)
+def calculateProximityConnection(w, w2):
+	proximity = 1.0 / abs(w-w2)	#CHECKTHIS: requires calibration
+	#proximity = 1.0	#complete deweight of proximity parameter
 	return proximity
 
 
@@ -327,6 +326,7 @@ def replaceReference(node1, referenceNode, currentTime):
 
 #recency metric:
 def calculateRecencyConnection(sentenceTreeNodeList, node1, node2, currentTime):
+	#CHECKTHIS: requires calibration
 	#CHECKTHIS: requires update - currently uses rudimentary combined minTimeDiff similarity comparison
 	if(calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic):
 		subgraphArtificalTime1 = calculateSubgraphArtificialTime(sentenceTreeNodeList, node1)
@@ -432,7 +432,7 @@ def findMostSimilarReferenceInGraph(sentenceTreeNodeList, node1, currentTime):
 	maxSimilarity = 0
 
 	if(node1.lemma in graphNodeDictionary):
-		print("node1.lemma = ", node1.lemma)
+		#print("node1.lemma = ", node1.lemma)
 		node1ConceptInstances = graphNodeDictionary[node1.lemma]	#current limitation: only reference identical lemmas [future allow referencing based on word vector similarity]
 		for instanceID1, instanceNode1 in node1ConceptInstances.items():
 			if(instanceNode1.activationTime != currentTime):	#ignore instances that were added from same sentence	#OR: instanceNode1 is not in(sentenceTreeNodeList)
@@ -498,6 +498,7 @@ def calculateSubgraphNumberIdenticalConcepts2(sentenceTreeNodeList, node1, node2
 
 #connection similarity:
 def calculateFrequencyConnection(sentenceTreeNodeList, node1, node2):
+	#CHECKTHIS: requires calibration
 	#CHECKTHIS; note compares node subgraph source components (not target components)
 	frequency = compareNodeConnectionSimilarity(sentenceTreeNodeList, node1, node2)	 #CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
 	return frequency
@@ -512,6 +513,7 @@ def compareNodeConnectionSimilarity(sentenceTreeNodeList, node1, node2):
 
 def compareNodeWordVectorSimilarity(sentenceTreeNodeList, node1, node2):
 	wordVectorDiff = compareNodeWordVector(sentenceTreeNodeList, node1, node2)
+	#print("compareNodeWordVectorSimilarity: node1.lemma = ", node1.lemma, ", node2.lemma = ", node2.lemma, ", wordVectorDiff = ", wordVectorDiff)
 	similarity = calculateWordVectorSimilarity(wordVectorDiff)
 	return similarity
 	
@@ -534,6 +536,7 @@ def calculateSubgraphArtificialWordVectorRecurse(sentenceTreeNodeList, node, sub
 	#CHECKTHIS: requires update - currently uses rudimentary combined word vector similarity comparison
 	if(node.graphNodeType == graphNodeTypeLeaf):
 		subgraphArtificalWordVector = np.add(subgraphArtificalWordVector, node.wordVector)
+		#print("subgraphArtificalWordVector = ", np.mean(np.abs(subgraphArtificalWordVector)))
 		subgraphSize = subgraphSize + 1
 	for subgraphNode in node.graphNodeSourceList:	
 		if(subgraphNode in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
@@ -547,7 +550,8 @@ def calculateWordVectorSimilarity(wordVectorDiff):
 
 def compareWordVectors(wordVector1, wordVector2):
 	wordVectorDiff = np.mean(np.absolute(np.subtract(wordVector1, wordVector2)))
-	#print("wordVectorDiff = ", wordVectorDiff)
+	#print("\twordVector1 = ", wordVector1)
+	#print("\twordVector2 = ", wordVector2)
 	return wordVectorDiff
 
 
