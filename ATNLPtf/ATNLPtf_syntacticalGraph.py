@@ -1,4 +1,4 @@
-"""ATNLPtf_graph.py
+"""ATNLPtf_syntacticalGraph.py
 
 # Author:
 Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
@@ -13,7 +13,7 @@ see ATNLPtf_main.py
 see ATNLPtf_main.py
 
 # Description:
-ATNLP graph - generate syntactical/semantic tree/graph using input vectors (based on word proximity, frequency, and recency)
+ATNLP Syntactical Graph - generate syntactical tree/graph using input vectors (based on word proximity, frequency, and recency heuristics)
 
 """
 
@@ -21,12 +21,19 @@ import numpy as np
 import spacy
 spacyWordVectorGenerator = spacy.load('en_core_web_md')	#spacy.load('en_core_web_lg')
 import ANNtf2_loadDataset
-import networkx as nx
-import matplotlib.pyplot as plt
+from ATNLPtf_syntacticalNodeClass import *
 
-drawGraph = True
-if(drawGraph):
-	graph = nx.Graph()
+performReferenceResolution = False	#temporarily disable to ensure single leaf node per word in sentence	#disable with generateSemanticGraph
+	
+drawSyntacticalGraph = True
+drawSyntacticalGraphNodeColours = False
+if(drawSyntacticalGraph):
+	import ATNLPtf_syntacticalGraphDraw
+	if(drawSyntacticalGraphNodeColours):
+		from ATNLPtf_semanticNodeClass import identifyEntityType
+
+calibrateConnectionMetricParameters = True
+printVerbose = False
 
 #calculateFrequencyConnection method: calculates frequency of co-occurance of words/subsentences in corpus 
 calculateConnectionFrequencyUsingWordVectorSimilarity = True		#CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
@@ -41,13 +48,6 @@ addConceptNodesToDatabase = True	#add concept to dictionary (if non-existent) - 
 #contiguousNodesGraph = True 	#mandatory: nodes must be contiguous (word order)
 
 
-#referenceSetDelimiterNodePosTags = ["CC", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ"]
-
-graphNodeTypeUnknown = 0
-graphNodeTypeLeaf = 1	#lemma
-graphNodeTypeHidden = 2	#branch
-graphNodeTypeHead = 3	#tree
-
 conceptID = 0	#special instance ID for concepts
 maxTimeDiff = 10.0	#calculateTimeDiff(minRecency)	#CHECKTHIS: requires calibration (<= ~10: ensures timeDiff for unencountered concepts is not infinite - required for metric)	#units: sentenceIndex
 #minRecency = calculateRecency(maxTimeDiff)	#  minRecency = 0.1	#CHECKTHIS: requires calibration (> 0: ensures recency for unencountered concepts is not zero - required for metric)	
@@ -56,50 +56,39 @@ maxTimeDiffForMatchingInstance = 2	#time in sentence index diff	#CHECKTHIS: requ
 metricThresholdToCreateConnection = 1.0	#CHECKTHIS: requires calibration
 metricThresholdToCreateReference = 1.0	#CHECKTHIS: requires calibration
 
-graphNodeDictionary = {}	#dict indexed by lemma, every entry is a dictionary of GraphNode instances indexed by instanceID (first instance is special; reserved for concept)
-#graphConnectionsDictionary = {}	#dict indexed tuples (lemma1, instanceID1, lemma2, instanceID2), every entry is a tuple of GraphNode instances/concepts (instanceNode1, instanceNode2) [directionality: 1=source, 2=target]
+graphNodeDictionary = {}	#dict indexed by lemma, every entry is a dictionary of SyntacticalNode instances indexed by instanceID (first instance is special; reserved for concept)
+#graphConnectionsDictionary = {}	#dict indexed tuples (lemma1, instanceID1, lemma2, instanceID2), every entry is a tuple of SyntacticalNode instances/concepts (instanceNode1, instanceNode2) [directionality: 1=source, 2=target]
 	#this is used for visualisation/fast lookup purposes only - can trace node graphNodeTargetList/graphNodeSourceList instead
 
-class GraphNode:
-	def __init__(self, instanceID, word, lemma, wordVector, conceptTime, posTag, nodeGraphType, activationTime, w, wMin, wMax, treeLevel):
-		self.instanceID = instanceID
-		self.word = word
-		self.lemma = lemma
-		self.wordVector = wordVector	#numpy array
-		self.conceptTimeSentenceTreeArtificial = conceptTime
-		self.posTag = posTag	#nlp in context prediction only (not certain)
-		self.graphNodeType = nodeGraphType
-		self.activationTime = activationTime	#used to calculate recency
-		self.w = w #temporary sentence word index (used for reference resolution only)
-		self.wMin = wMin	#temporary sentence word index (used for reference resolution only) - min of all hidden nodes
-		self.wMax = wMax	#temporary sentence word index (used for reference resolution only) - max of all hidden nodes
-		self.treeLevel = treeLevel
-		self.referenceSentenceTreeArtificial = False	#temporary flag: node has been reference by current sentence (used for reference resolution only)
-		#self.activationLevel = 0.0	#used to calculate recency
-		#self.frequency = None	#float
-		#connections;
-		self.graphNodeTargetList = []
-		self.graphNodeSourceList = []
-		#self.graphNodeTargetDict = {}	#dict indexed by lemma, every entry is a dictionary of GraphNode instances indexed by instanceID 	#for optimised lookup by concept
-		#self.graphNodeSourceDict = {}	#dict indexed by lemma, every entry is a dictionary of GraphNode instances indexed by instanceID	#for optimised lookup by concept
-		#self.foundRecentIndex = False	#temporary var (indicates referencing a previously declared instance in the article)
-		
-	
-def generateGraph(sentenceIndex, sentence):
-	
-	print("\n\ngenerateGraph: sentenceIndex = ", sentenceIndex, "; ", sentence)
+
+def generateSyntacticalGraphStringInput(sentenceIndex, sentence):
+
+	print("\n\ngenerateSyntacticalGraph: sentenceIndex = ", sentenceIndex, "; ", sentence)
+
+	tokenisedSentence = tokeniseSentence(sentence)
+	sentenceLength = len(tokenisedSentence)
+
+	if(sentenceLength > 1):
+		return generateSyntacticalGraph(sentenceIndex, tokenisedSentence)
+	else:
+		print("error: sentenceLength !> 1")
+		exit()
+			
+def generateSyntacticalGraph(sentenceIndex, tokenisedSentence):
+
+	ATNLPtf_syntacticalGraphDraw.setColourSyntacticalNodes(drawSyntacticalGraphNodeColours)
+	print("ATNLPtf_syntacticalGraph: ATNLPtf_syntacticalGraphDraw.drawSyntacticalGraphNodeColours = ", ATNLPtf_syntacticalGraphDraw.drawSyntacticalGraphNodeColours)
 	
 	currentTime = calculateActivationTime(sentenceIndex)
 
-	if(drawGraph):
-		graph.clear()	#only draw graph for single sentence
+	if(drawSyntacticalGraph):
+		ATNLPtf_syntacticalGraphDraw.clearSyntacticalGraph()
 
 	sentenceLeafNodeList = []	#local/temporary list of sentence instance nodes (before reference resolution)		
 	sentenceTreeNodeList = []	#local/temporary list of sentence instance nodes (before reference resolution)
 	connectivityStackNodeList = []	#temporary list of nodes on connectivity stack
 	#sentenceGraphNodeDictionary = {}	#local/isolated/temporary graph of sentence instance nodes (before reference resolution)
 		
-	tokenisedSentence = tokeniseSentence(sentence)
 	sentenceLength = len(tokenisedSentence)
 	
 	#declare graph nodes;
@@ -113,127 +102,151 @@ def generateGraph(sentenceIndex, sentence):
 		activationTime = calculateActivationTime(sentenceIndex)
 		nodeGraphType = graphNodeTypeLeaf
 		treeLevel = 0
-		
+
 		if(addConceptNodesToDatabase):
 			#add concept to dictionary (if non-existent) - not currently used;
 			if lemma not in graphNodeDictionary:
 				instanceID = conceptID
-				conceptNode = GraphNode(instanceID, word, lemma, wordVector, conceptTime, posTag, nodeGraphType, currentTime, w, w, w, treeLevel)
+				conceptNode = SyntacticalNode(instanceID, word, lemma, wordVector, conceptTime, posTag, nodeGraphType, currentTime, w, w, w, treeLevel)
 				addInstanceNodeToGraph(lemma, instanceID, conceptNode)
 
 		#add instance to local/temporary sentenceLeafNodeList (reference resolution is required before adding nodes to graph);
 		instanceIDprelim = getNewInstanceID(lemma)	#same instance id will be assigned to identical lemmas in sentence (which is not approprate in the case they refer to independent instances) - will be reassign instance id after reference resolution
-		instanceNode = GraphNode(instanceIDprelim, word, lemma, wordVector, conceptTime, posTag, nodeGraphType, currentTime, w, w, w, treeLevel)
-		print("create new instanceNode; ", instanceNode.lemma, ": instanceID=", instanceNode.instanceID)
+		instanceNode = SyntacticalNode(instanceIDprelim, word, lemma, wordVector, conceptTime, posTag, nodeGraphType, currentTime, w, w, w, treeLevel)
+		if(printVerbose):
+			print("create new instanceNode; ", instanceNode.lemma, ": instanceID=", instanceNode.instanceID)
 
 		sentenceLeafNodeList.append(instanceNode)
 		sentenceTreeNodeList.append(instanceNode)
 		connectivityStackNodeList.append(instanceNode)
 		
-		if(drawGraph):
-			graph.add_node(lemma, pos=(w, treeLevel))
+		if(drawSyntacticalGraph):
+			if(drawSyntacticalGraphNodeColours):	
+				entityType = identifyEntityType(instanceNode)
+				instanceNode.entityType = entityType
+			ATNLPtf_syntacticalGraphDraw.drawSyntacticalGraphNode(instanceNode, w, treeLevel)
 
 	#add connections to local/isolated/temporary graph (syntactical tree);
-	if(sentenceLength > 1):
-		headNodeFound = False
-		while not headNodeFound:
+	if(calibrateConnectionMetricParameters):
+		recencyList = []
+		proximityList = []
+		frequencyList = []	
+		metricList = []
 
-			connectionNode1 = None
-			connectionNode2 = None
-			maxConnectionMetric = 0.0
+	headNodeFound = False
+	graphHeadNode = None
+	while not headNodeFound:
 
-			connectionFound = False
-			
-			for node1StackIndex, node1 in enumerate(connectivityStackNodeList):
-				for node2StackIndex, node2 in enumerate(connectivityStackNodeList):
-					if(node1StackIndex != node2StackIndex):
-						#print("node1.wMax = ", node1.wMax)
-						#print("node2.wMin = ", node2.wMin)
-						if(node1.wMax+1 == node2.wMin):
+		connectionNode1 = None
+		connectionNode2 = None
+		maxConnectionMetric = 0.0
+
+		connectionFound = False
+
+		for node1StackIndex, node1 in enumerate(connectivityStackNodeList):
+			for node2StackIndex, node2 in enumerate(connectivityStackNodeList):
+				if(node1StackIndex != node2StackIndex):
+					#print("node1.wMax = ", node1.wMax)
+					#print("node2.wMin = ", node2.wMin)
+					if(node1.wMax+1 == node2.wMin):
+						if(printVerbose):
 							print("calculateMetricConnection: node1.lemma = ", node1.lemma, ", node2.lemma = ", node2.lemma)
-							proximity = calculateProximityConnection(node1.w, node2.w)
-							frequency = calculateFrequencyConnection(sentenceTreeNodeList, node1, node2)
-							recency = calculateRecencyConnection(sentenceTreeNodeList, node1, node2, currentTime)	#minimise the difference in recency between left/right node
-							connectionMetric = calculateMetricConnection(proximity, frequency, recency)
-							if(connectionMetric > maxConnectionMetric):
-								print("connectionMetric found")
-								connectionFound = True
-								maxConnectionMetric = connectionMetric
-								connectionNode1 = node1
-								connectionNode2 = node2
+						proximity = calculateProximityConnection(node1.w, node2.w)
+						frequency = calculateFrequencyConnection(sentenceTreeNodeList, node1, node2)
+						recency = calculateRecencyConnection(sentenceTreeNodeList, node1, node2, currentTime)	#minimise the difference in recency between left/right node
+						connectionMetric = calculateMetricConnection(proximity, frequency, recency)
+						if(connectionMetric > maxConnectionMetric):
+							#print("connectionMetric found")
+							connectionFound = True
+							maxConnectionMetric = connectionMetric
+							connectionNode1 = node1
+							connectionNode2 = node2
+						
+						if(calibrateConnectionMetricParameters):
+							proximityList.append(proximity)
+							frequencyList.append(frequency)
+							recencyList.append(recency)
+							metricList.append(connectionMetric)
 			
-			if(not connectionFound):
-				print("error connectionFound - check calculateMetricConnection parameters > 0.0, maxConnectionMetric = ", maxConnectionMetric)
-				exit()
-				
+		if(not connectionFound):
+			print("error connectionFound - check calculateMetricConnection parameters > 0.0, maxConnectionMetric = ", maxConnectionMetric)
+			exit()
+
+		if(printVerbose):
 			print("create connection; w1 w2 = ", connectionNode1.w, " ", connectionNode2.w, ", connectionNode1.lemma connectionNode2.lemma = ", connectionNode1.lemma, " ", connectionNode2.lemma, ", metric = ", maxConnectionMetric)
 
-			#CHECKTHIS limitation - infers directionality (source/target) of connection based on w1/w2 word order		
-			connectionDirection = True	#CHECKTHIS: always assume left to right directionality
+		#CHECKTHIS limitation - infers directionality (source/target) of connection based on w1/w2 word order		
+		connectionDirection = True	#CHECKTHIS: always assume left to right directionality
 
-			word = connectionNode1.word + connectionNode2.word
-			lemma = connectionNode1.lemma + connectionNode2.lemma
-			if(calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic):
-				wordVector = None
-			else:
-				wordVector = np.mean([connectionNode1.wordVector, connectionNode2.wordVector])	#CHECKTHIS; if subgraph is not symmetrical, will incorrectly weigh word vectors
-			if(calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic):
-				conceptTime = None
-			else:
-				conceptTime = average(connectionNode1.conceptTimeSentenceTreeArtificial, connectionNode2.conceptTimeSentenceTreeArtificial) #CHECKTHIS; if subgraph is not symmetrical, will incorrectly weigh recency
-			posTag = None
-			activationTime = average(connectionNode1.activationTime, connectionNode2.activationTime) 		#calculateActivationTime(sentenceIndex)
-			nodeGraphType = graphNodeTypeHidden
-			treeLevel = max(connectionNode1.treeLevel, connectionNode2.treeLevel) + 1
+		word = connectionNode1.word + connectionNode2.word
+		lemma = connectionNode1.lemma + connectionNode2.lemma
+		if(calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic):
+			wordVector = None
+		else:
+			wordVector = np.mean([connectionNode1.wordVector, connectionNode2.wordVector])	#CHECKTHIS; if subgraph is not symmetrical, will incorrectly weigh word vectors
+		if(calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic):
+			conceptTime = None
+		else:
+			conceptTime = mean([connectionNode1.conceptTimeSentenceTreeArtificial, connectionNode2.conceptTimeSentenceTreeArtificial]) #CHECKTHIS; if subgraph is not symmetrical, will incorrectly weigh recency
+		posTag = None
+		activationTime = mean([connectionNode1.activationTime, connectionNode2.activationTime]) 		#calculateActivationTime(sentenceIndex)
+		nodeGraphType = graphNodeTypeBranch
+		treeLevel = max(connectionNode1.treeLevel, connectionNode2.treeLevel) + 1
 
-			w = average(connectionNode1.w, connectionNode2.w)
-			wMin = min(connectionNode1.wMin, connectionNode2.wMin)
-			wMax = max(connectionNode1.wMax, connectionNode2.wMax)
+		w = mean([connectionNode1.w, connectionNode2.w])
+		wMin = min(connectionNode1.wMin, connectionNode2.wMin)
+		wMax = max(connectionNode1.wMax, connectionNode2.wMax)
+
+		instanceIDprelim = getNewInstanceID(lemma)
+		hiddenNode = SyntacticalNode(instanceIDprelim, word, lemma, wordVector, conceptTime, posTag, nodeGraphType, currentTime, w, wMin, wMax, treeLevel)
+		createGraphConnectionWrapper(hiddenNode, connectionNode1, connectionNode2, connectionDirection, addToConnectionsDictionary=False)
+
+		sentenceTreeNodeList.append(hiddenNode)
+		connectivityStackNodeList.remove(connectionNode1)
+		connectivityStackNodeList.remove(connectionNode2)
+		connectivityStackNodeList.append(hiddenNode)
+
+		if(drawSyntacticalGraph):
+			ATNLPtf_syntacticalGraphDraw.drawSyntacticalGraphNode(hiddenNode, w, treeLevel)
+			ATNLPtf_syntacticalGraphDraw.drawSyntacticalGraphConnection(hiddenNode, connectionNode1)
+			ATNLPtf_syntacticalGraphDraw.drawSyntacticalGraphConnection(hiddenNode, connectionNode2)
+
+		if(len(connectivityStackNodeList) == 1):
+			headNodeFound = True
+			hiddenNode.graphNodeType = graphNodeTypeHead	#reference set delimiter (captures primary subject/action/object of sentence clause)
+			graphHeadNode = hiddenNode
+
+	if(calibrateConnectionMetricParameters):
+		proximityMinMeanMax = minMeanMaxList(proximityList)
+		frequencyMinMeanMax = minMeanMaxList(frequencyList)
+		recencyMinMeanMax = minMeanMaxList(recencyList)
+		metricMinMeanMax = minMeanMaxList(metricList)
+		print("proximityMinMeanMax = ", proximityMinMeanMax)
+		print("frequencyMinMeanMax = ", frequencyMinMeanMax)
+		print("recencyMinMeanMax = ", recencyMinMeanMax)
+		print("metricMinMeanMax = ", metricMinMeanMax)
 			
-			instanceIDprelim = getNewInstanceID(lemma)
-			hiddenNode = GraphNode(instanceIDprelim, word, lemma, wordVector, conceptTime, posTag, nodeGraphType, currentTime, w, wMin, wMax, treeLevel)
-			createGraphConnectionWrapper(hiddenNode, connectionNode1, connectionNode2, connectionDirection, addToConnectionsDictionary=False)
-
-			sentenceTreeNodeList.append(hiddenNode)
-			connectivityStackNodeList.remove(connectionNode1)
-			connectivityStackNodeList.remove(connectionNode2)
-			connectivityStackNodeList.append(hiddenNode)
-
-			if(drawGraph):
-				graph.add_node(lemma, pos=(w, treeLevel))
-				graph.add_edge(hiddenNode.lemma, connectionNode1.lemma)
-				graph.add_edge(hiddenNode.lemma, connectionNode2.lemma)
-			
-			if(len(connectivityStackNodeList) == 1):
-				headNodeFound = True
-				hiddenNode.graphNodeType = graphNodeTypeHead	#reference set delimiter (captures primary subject/action/object of sentence clause)
-	else:
-		 node1 = connectivityStackNodeList[0]
-		 node1.graphNodeType = graphNodeTypeHead
-
-		
-	#peform reference resolution after building syntactical tree (any instance of successful reference identification will insert syntactical tree into graph)		
-	#resolve references		
-	#CHECKTHIS limitation; only replaces highest level node in subgraph/reference set - consider replacing all nodes in subgraph/reference set
-	resolvedReferences = [False]*sentenceLength
-	for node1 in sentenceTreeNodeList:	
-		if(not node1.referenceSentenceTreeArtificial):
-			foundReference, referenceNode, maxSimilarity = findMostSimilarReferenceInGraph(sentenceTreeNodeList, node1, currentTime)
-			if(foundReference and (maxSimilarity > metricThresholdToCreateReference)):
-				print("replaceReference: findMostSimilarReferenceInGraph maxSimilarity = ", maxSimilarity)
-				replaceReference(node1, referenceNode, currentTime)
-			else:
-				#instanceID = getNewInstanceID(lemma)
-				addInstanceNodeToGraph(node1.lemma, node1.instanceID, node1)
+	if(performReferenceResolution):
+		#peform reference resolution after building syntactical tree (any instance of successful reference identification will insert syntactical tree into graph)		
+		#resolve references		
+		#CHECKTHIS limitation; only replaces highest level node in subgraph/reference set - consider replacing all nodes in subgraph/reference set
+		resolvedReferences = [False]*sentenceLength
+		for node1 in sentenceTreeNodeList:	
+			if(not node1.referenceSentenceTreeArtificial):
+				foundReference, referenceNode, maxSimilarity = findMostSimilarReferenceInGraph(sentenceTreeNodeList, node1, currentTime)
+				if(foundReference and (maxSimilarity > metricThresholdToCreateReference)):
+					print("replaceReference: findMostSimilarReferenceInGraph maxSimilarity = ", maxSimilarity)
+					replaceReference(node1, referenceNode, currentTime)
+				else:
+					#instanceID = getNewInstanceID(lemma)
+					addInstanceNodeToGraph(node1.lemma, node1.instanceID, node1)
 	
-	if(drawGraph):
-		pos = nx.get_node_attributes(graph, 'pos')
-		nx.draw(graph, pos, with_labels=True)
-		plt.show()
+	if(drawSyntacticalGraph):
+		ATNLPtf_syntacticalGraphDraw.displaySyntacticalGraph()
+		
+	return sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode
 
-def average(number1, number2):
-	return (number1 + number2) / 2.0
-  
+
 def createSubDictionaryForConcept(dic, lemma):
 	dic[lemma] = {}	#create empty dictionary for new concept
 			
@@ -253,6 +266,8 @@ def createGraphConnection(hiddenNode, node1, node2, addToConnectionsDictionary):
 	addConnectionToNodeTargets(node2, hiddenNode)
 	addConnectionToNodeSources(hiddenNode, node1)
 	addConnectionToNodeSources(hiddenNode, node2)
+	node1.sourceNodePosition = sourceNodePositionFirst
+	node2.sourceNodePosition = sourceNodePositionSecond
 
 	#if(addToConnectionsDictionary):
 	#	graphConnectionKey = createGraphConnectionKey(hiddenNode, node1, node2)
@@ -262,13 +277,6 @@ def createGraphConnection(hiddenNode, node1, node2, addToConnectionsDictionary):
 #	connectionKey = (hiddenNode.lemma, hiddenNode.instanceID, node1.lemma, node1.instanceID, node2.lemma, node2.instanceID)
 #	return connectionKey
 
-def addConnectionToNodeTargets(node, nodeToConnect):
-	node.graphNodeTargetList.append(nodeToConnect)
-	#addInstanceNodeToDictionary(node.graphNodeTargetDict, nodeToConnect.lemma, nodeToConnect.instanceID, nodeToConnect)
-
-def addConnectionToNodeSources(node, nodeToConnect):
-	node.graphNodeSourceList.append(nodeToConnect)
-	#addInstanceNodeToDictionary(node.graphNodeSourceDict, nodeToConnect.lemma, nodeToConnect.instanceID, nodeToConnect)
 
 
 
@@ -296,7 +304,7 @@ def calculateMetricReference(similarity, recency):
 		
 def calculateMetricConnection(proximity, frequency, recency):
 	metric = proximity*frequency*recency #CHECKTHIS: requires calibration - normalisation of factors is required
-	print("\t\tcalculateMetricConnection: metric = ", metric, "; proximity = ", proximity, ", frequency = ", frequency, ", recency = ", recency)
+	#print("\t\tcalculateMetricConnection: metric = ", metric, "; proximity = ", proximity, ", frequency = ", frequency, ", recency = ", recency)
 	return metric
 	
 def calculateActivationTime(sentenceIndex):
@@ -586,5 +594,11 @@ def getTokenPOStag(token):
 	#nlp in context prediction only (not certain)
 	posTag = token.pos_
 	return posTag
-	
-		
+  
+def mean(lst):
+	return sum(lst) / len(lst)
+
+def minMeanMaxList(lst):
+	return (min(lst), mean(lst), max(lst))
+
+

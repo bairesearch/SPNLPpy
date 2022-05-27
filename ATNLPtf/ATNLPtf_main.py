@@ -33,8 +33,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from nltk.tokenize import word_tokenize
 from collections import Counter, defaultdict
 
-import ATNLPtf_getAllPossiblePosTags
-
 import tensorflow as tf
 import numpy as np
 
@@ -47,7 +45,8 @@ import ANNtf2_loadDataset
 
 #ATNLP algorithm selection;
 #algorithmATNLP = "normaliseInputVectors"	#original ATNLP method
-algorithmATNLP = "generateGraph"	#method of syntactical/semantic graph construction based on word proximity, frequency, and recency
+#algorithmATNLP = "generateSyntacticalGraph"	#syntactical/semantic graph construction based on word proximity, frequency, and recency
+algorithmATNLP = "generateSemanticGraph"	#semantic graph construction based on transformation of syntactical graph
 
 #debug parameters
 debugUseSmallSequentialInputDataset = False
@@ -55,8 +54,12 @@ debugUseSmallSequentialInputDataset = False
 if(algorithmATNLP == "normaliseInputVectors"):
 	import ATNLPtf_normalisation
 	NLPsequentialInputTypeTokeniseWords = True	#perform nltk tokenization early in pipeline
-elif(algorithmATNLP == "generateGraph"):
-	import ATNLPtf_graph
+elif(algorithmATNLP == "generateSyntacticalGraph"):
+	import ATNLPtf_syntacticalGraph
+	NLPsequentialInputTypeTokeniseWords = False	#perform spacy tokenization later in pipeline
+elif(algorithmATNLP == "generateSemanticGraph"):
+	import ATNLPtf_syntacticalGraph
+	import ATNLPtf_semanticGraph
 	NLPsequentialInputTypeTokeniseWords = False	#perform spacy tokenization later in pipeline
 
 supportBatchAndMultiAbstractionLevelProcessing = False		#batches are not currently processed/normalised in parallel (retained for source base compatibility);
@@ -142,8 +145,14 @@ def trainSequentialInput(trainMultipleFiles=False):
 	
 	if(algorithmATNLP == "normaliseInputVectors"):
 		ATNLPtf_normalisation.constructPOSdictionary()	#required for ATNLPtf_normalisation:ATNLPtf_getAllPossiblePosTags.getAllPossiblePosTags(word)
-	#elif(algorithmATNLP == "generateGraph"):	#use spacy POS detection (whole sentence) instead of nltk pos detection
-	
+	elif(algorithmATNLP == "generateSyntacticalGraph"):	
+		#ATNLPtf_syntacticalGraph.constructPOSdictionary() #use spacy POS detection (whole sentence) instead of nltk pos detection
+		pass
+	elif(algorithmATNLP == "generateSemanticGraph"):	
+		#ATNLPtf_semanticGraph.constructPOSdictionary() #use spacy POS detection (whole sentence) instead of nltk pos detection
+		if(ATNLPtf_semanticGraph.actionDetectionAnyCandidateVerbPOS):
+			ATNLPtf_semanticGraph.constructPOSdictionary()
+						
 	networkIndex = 1	#assert numberOfNetworks = 1
 	fileIndexTemp = 0	#assert trainMultipleFiles = False
 
@@ -196,10 +205,13 @@ def trainSequentialInputNetworkSimple(sentenceIndex, textContentList):
 		inputVectorList = ANNtf2_loadDataset.generateWordVectorInputList(textContentList, wordVectorLibraryNumDimensions)	#numberSequentialInputs x inputVecDimensions
 		normalisedInputVectorList = ATNLPtf_normalisation.normaliseInputVectorUsingWords(inputVectorList, textContentList)	#normalise length
 		#network propagation (TODO);
-	elif(algorithmATNLP == "generateGraph"):
-		ATNLPtf_graph.generateGraph(sentenceIndex, textContentList)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence
-		
-	
+	elif(algorithmATNLP == "generateSyntacticalGraph"):
+		ATNLPtf_syntacticalGraph.generateSyntacticalGraphStringInput(sentenceIndex, textContentList)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence		
+	elif(algorithmATNLP == "generateSemanticGraph"):
+		sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode = ATNLPtf_syntacticalGraph.generateSyntacticalGraphStringInput(sentenceIndex, textContentList)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence
+		ATNLPtf_semanticGraph.generateSemanticGraph(sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode)		
+
+
 if __name__ == "__main__":
 	trainSequentialInput(trainMultipleFiles=trainMultipleFiles)
 
