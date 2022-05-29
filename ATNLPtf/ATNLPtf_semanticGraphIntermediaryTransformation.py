@@ -49,7 +49,7 @@ def performIntermediarySemanticTransformation(sentenceSyntacticalLeafNodeList, s
 	if(drawSyntacticalGraphTemporaryAfterRelationshipTransformation):
 		ATNLPtf_syntacticalGraphDrawSentence.drawSyntacticalGraphSentence(syntacticalGraphHeadNode)
 		print("ATNLPtf_syntacticalGraphDrawSentence.displaySyntacticalGraph()")
-		ATNLPtf_syntacticalGraphDrawSentence.displaySyntacticalGraph()	
+		ATNLPtf_syntacticalGraphDrawSentence.displaySyntacticalGraph()
 
 
 def identifyEntityTypes(sentenceSyntacticalLeafNodeList):
@@ -70,6 +70,7 @@ def identifyMultiwordRelationshipLeafNodes(sentenceSyntacticalLeafNodeList):
 	leafNodeInsertionIndex = -1
 	for leafNodeIndex, leafNode in enumerate(sentenceSyntacticalLeafNodeList):
 		if(not leafNode.multiwordLeafNode):
+			#print("leafNode = ", leafNode.lemma)
 			currentBranchNode = leafNode.graphNodeTargetList[graphNodeTargetIndex]
 			sourceNode1 = currentBranchNode.graphNodeSourceList[graphNodeSourceIndexFirst]
 			sourceNode2 = currentBranchNode.graphNodeSourceList[graphNodeSourceIndexSecond]
@@ -135,7 +136,7 @@ def moveRelationshipSyntacticalNodes(sentenceSyntacticalLeafNodeList, sentenceSy
 				branchHeadSourceSecondFound = True
 			else:
 				#tree head found before finding final matched branch head
-				if(entityIsRelationshipAction(entityType)):
+				if(ATNLPtf_semanticNodeClass.entityIsRelationshipAction(entityType)):
 					#relationship node found without either a subject or object
 					if(leafNode.sourceNodePosition == sourceNodePositionFirst):
 						#relationship node found without subject
@@ -143,7 +144,7 @@ def moveRelationshipSyntacticalNodes(sentenceSyntacticalLeafNodeList, sentenceSy
 					elif(leafNode.sourceNodePosition == sourceNodePositionSecond):
 						#relationship node found without object
 						branchHeadSourceFirstFound = True
-				elif(entityIsRelationshipCondition(entityType)):
+				elif(ATNLPtf_semanticNodeClass.entityIsRelationshipCondition(entityType)):
 					print("moveRelationshipSyntacticalNodes error: condition (preposition) entities require subject and object")
 					exit()
 

@@ -44,7 +44,8 @@ class SyntacticalNode:
 		self.posTag = posTag	#nlp in context prediction only (not certain)
 		self.graphNodeType = nodeGraphType
 		self.activationTime = activationTime	#last activation time (used to calculate recency)
-
+		self.constituencyParserLabel = None	#not used (stored for reference)
+		
 		#sentenceTreeArtificial vars;
 		self.subgraphSize = subgraphSize	#used to normalise wordVector/conceptTime for hidden nodes
 		self.conceptWordVector = conceptWordVector	#requires /subgraphSize

@@ -818,6 +818,7 @@ def loadDatasetType4(datasetFileNameX, limitSentenceLengths, limitSentenceLength
 			sentences = []
 			for sentenceIndex, sentence in enumerate(sentencesText):
 				#print("\t\t\tsentenceIndex = ", sentenceIndex)
+				sentence = sentence.strip()	#required to remove new lines from sent_tokenize output
 				wordsText = tokenize.word_tokenize(sentence)
 				sentenceLengthCheck = True
 				if(limitSentenceLengths):
@@ -839,9 +840,9 @@ def loadDatasetType4(datasetFileNameX, limitSentenceLengths, limitSentenceLength
 							sentence = words
 							sentences.append(sentence)
 						else:
-							#print("wordsText = ", wordsText)
 							sentences.append(wordsText)
 					else:
+						#print("sentence = ", sentence)
 						sentences.append(sentence)
 			paragraphs.append(sentences)
 		articles.append(paragraphs)
