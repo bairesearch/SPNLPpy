@@ -35,23 +35,28 @@ graphNodeSourceIndexSecond = 1	#should only contain 2 elements
 
 #FUTURE: move these to ATNLPtf_syntacticalNodeClass;
 class SyntacticalNode:
-	def __init__(self, instanceID, word, lemma, wordVector, conceptTime, posTag, nodeGraphType, activationTime, w, wMin, wMax, treeLevel):
+	def __init__(self, instanceID, word, lemma, wordVector, posTag, nodeGraphType, activationTime, subgraphSize, conceptWordVector, conceptTime, w, wMin, wMax, treeLevel, sentenceIndex):
+		#primary vars;
 		self.instanceID = instanceID
 		self.word = word
 		self.lemma = lemma
 		self.wordVector = wordVector	#numpy array
-		self.conceptTimeSentenceTreeArtificial = conceptTime
 		self.posTag = posTag	#nlp in context prediction only (not certain)
 		self.graphNodeType = nodeGraphType
-		self.activationTime = activationTime	#used to calculate recency
+		self.activationTime = activationTime	#last activation time (used to calculate recency)
+
+		#sentenceTreeArtificial vars;
+		self.subgraphSize = subgraphSize	#used to normalise wordVector/conceptTime for hidden nodes
+		self.conceptWordVector = conceptWordVector	#requires /subgraphSize
+		self.conceptTime = conceptTime	#requires /subgraphSize
 		self.w = w #temporary sentence word index (used for reference resolution only)
 		self.wMin = wMin	#temporary sentence word index (used for reference resolution only) - min of all hidden nodes
 		self.wMax = wMax	#temporary sentence word index (used for reference resolution only) - max of all hidden nodes
 		self.treeLevel = treeLevel
-		self.referenceSentenceTreeArtificial = False	#temporary flag: node has been reference by current sentence (used for reference resolution only)
-		#self.activationLevel = 0.0	#used to calculate recency
-		#self.frequency = None	#float
-		#connections;
+		self.sentenceIndex = sentenceIndex
+		#self.referenceSentence = False	#temporary flag: node has been reference by current sentence (used for reference resolution only)
+		
+		#connection vars;
 		self.graphNodeTargetList = []	#should only contain one element
 		self.graphNodeSourceList = []
 		#self.graphNodeTargetDict = {}	#dict indexed by lemma, every entry is a dictionary of SyntacticalNode instances indexed by instanceID 	#for optimised lookup by concept
@@ -64,6 +69,9 @@ class SyntacticalNode:
 		self.multiwordLeafNode = False
 		self.referenceSetDelimiter = False	#if entityType IsRelationship only
 		self.subreferenceSetDelimiter = False	#if entityType IsRelationship only
+		
+		#temporary graph draw variables
+		self.drawn = False
 		
 def addConnectionToNodeTargets(node, nodeToConnect):
 	node.graphNodeTargetList.append(nodeToConnect)

@@ -45,8 +45,8 @@ import ANNtf2_loadDataset
 
 #ATNLP algorithm selection;
 #algorithmATNLP = "normaliseInputVectors"	#original ATNLP method
-#algorithmATNLP = "generateSyntacticalGraph"	#syntactical/semantic graph construction based on word proximity, frequency, and recency
-algorithmATNLP = "generateSemanticGraph"	#semantic graph construction based on transformation of syntactical graph
+algorithmATNLP = "generateSyntacticalGraph"	#syntactical/semantic graph construction based on word proximity, frequency, and recency
+#algorithmATNLP = "generateSemanticGraph"	#semantic graph construction based on transformation of syntactical graph
 
 #debug parameters
 debugUseSmallSequentialInputDataset = False
@@ -57,9 +57,13 @@ if(algorithmATNLP == "normaliseInputVectors"):
 elif(algorithmATNLP == "generateSyntacticalGraph"):
 	import ATNLPtf_syntacticalGraph
 	NLPsequentialInputTypeTokeniseWords = False	#perform spacy tokenization later in pipeline
+	performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph = True	#optional
+	generateSyntacticalGraphNetwork = True	#optional	#generate referenced syntactical network
 elif(algorithmATNLP == "generateSemanticGraph"):
 	import ATNLPtf_syntacticalGraph
 	import ATNLPtf_semanticGraph
+	performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph = False	#optional
+	generateSyntacticalGraphNetwork = False	#optional	#generate semantic network from referenced syntactical network
 	NLPsequentialInputTypeTokeniseWords = False	#perform spacy tokenization later in pipeline
 
 supportBatchAndMultiAbstractionLevelProcessing = False		#batches are not currently processed/normalised in parallel (retained for source base compatibility);
@@ -195,22 +199,27 @@ def processingSimple(articles):
 	if(NLPsequentialInputTypeMaxWordVectors):
 		#flatten any higher level abstractions defined in NLPsequentialInputTypeMax down to word vector lists (sentences);
 		articles = ANNtf2_loadDataset.flattenNestedListToSentences(articles)
-						
-	for sentenceIndex, sentence in enumerate(articles):
-		trainSequentialInputNetworkSimple(sentenceIndex, sentence)
-	
-def trainSequentialInputNetworkSimple(sentenceIndex, textContentList):
 
 	if(algorithmATNLP == "normaliseInputVectors"):
+		trainSequentialInputNetworkSimple(articles)
+	elif(algorithmATNLP == "generateSyntacticalGraph"):
+		syntacticalGraphNetwork = ATNLPtf_syntacticalGraph.generateSyntacticalGraphNetwork(articles, performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph, generateSyntacticalGraphNetwork)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence		
+	elif(algorithmATNLP == "generateSemanticGraph"):
+		if(generateSyntacticalGraphNetwork):
+			syntacticalGraphNetwork = ATNLPtf_syntacticalGraph.generateSyntacticalGraphNetwork(articles, performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph, generateSyntacticalGraphNetwork)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence		
+			ATNLPtf_semanticGraph.generateSemanticGraphNetwork(articles, syntacticalGraphNetwork, (not performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph))					
+		else:
+			ATNLPtf_semanticGraph.initialiseSemanticGraph()		
+			for sentenceIndex, sentence in enumerate(articles):
+				sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode = ATNLPtf_syntacticalGraph.generateSyntacticalGraphSentenceString(sentenceIndex, textContentList, performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence
+				ATNLPtf_semanticGraph.generateSemanticGraphSentence(sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode, (not performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph))		
+			ATNLPtf_semanticGraph.finaliseSemanticGraph()		
+							
+def trainSequentialInputNetworkSimple(articles):
+	for sentenceIndex, sentence in enumerate(articles):
 		inputVectorList = ANNtf2_loadDataset.generateWordVectorInputList(textContentList, wordVectorLibraryNumDimensions)	#numberSequentialInputs x inputVecDimensions
 		normalisedInputVectorList = ATNLPtf_normalisation.normaliseInputVectorUsingWords(inputVectorList, textContentList)	#normalise length
 		#network propagation (TODO);
-	elif(algorithmATNLP == "generateSyntacticalGraph"):
-		ATNLPtf_syntacticalGraph.generateSyntacticalGraphStringInput(sentenceIndex, textContentList)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence		
-	elif(algorithmATNLP == "generateSemanticGraph"):
-		sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode = ATNLPtf_syntacticalGraph.generateSyntacticalGraphStringInput(sentenceIndex, textContentList)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence
-		ATNLPtf_semanticGraph.generateSemanticGraph(sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode)		
-
 
 if __name__ == "__main__":
 	trainSequentialInput(trainMultipleFiles=trainMultipleFiles)
