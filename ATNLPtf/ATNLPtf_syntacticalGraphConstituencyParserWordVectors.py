@@ -13,9 +13,9 @@ see ATNLPtf_main.py
 see ATNLPtf_main.py
 
 # Description:
-ATNLP Syntactical Graph Word Vector Parser - generate syntactical tree/graph using input vectors (based on word proximity, frequency, and recency heuristics)
+ATNLP Syntactical Graph Constituency Parser Word Vectors - generate syntactical tree/graph using input vectors (based on word proximity, frequency, and recency heuristics)
 
-ATNLP (or SANI) syntactical tree stucture is generated in a format similar to a constituency-based parse tree
+Preconditions: assumes leaf nodes already generated
 
 """
 

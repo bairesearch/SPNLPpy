@@ -29,7 +29,7 @@ if(drawSyntacticalGraphTemporaryAfterRelationshipTransformation):
 	import ATNLPtf_syntacticalGraphDraw as ATNLPtf_syntacticalGraphDrawSentence
  
 
-def performIntermediarySemanticTransformation(sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList, syntacticalGraphHeadNode):
+def performIntermediarySemanticTransformation(parserType, sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList, syntacticalGraphHeadNode):
 
 	ATNLPtf_syntacticalGraphDrawSentence.setColourSyntacticalNodes(True)	#always color nodes when generating intermedary transformation graph
 	print("ATNLPtf_semanticGraphIntermediaryTransformation: ATNLPtf_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours = ", ATNLPtf_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours)
@@ -39,13 +39,18 @@ def performIntermediarySemanticTransformation(sentenceSyntacticalLeafNodeList, s
 
 	identifyEntityTypes(sentenceSyntacticalLeafNodeList)		
 	
-	sentenceSyntacticalLeafNodeListMultiwords = list(sentenceSyntacticalLeafNodeList)
-	
-	if(supportMultiwordVerbsPrepositions):
-		identifyMultiwordRelationshipLeafNodes(sentenceSyntacticalLeafNodeListMultiwords)
-	
-	moveRelationshipSyntacticalNodes(sentenceSyntacticalLeafNodeListMultiwords, sentenceSyntacticalTreeNodeList)
+	if(parserType == "constituencyParserWordVector"):
+		sentenceSyntacticalLeafNodeListMultiwords = list(sentenceSyntacticalLeafNodeList)
 
+		if(supportMultiwordVerbsPrepositions):
+			identifyMultiwordRelationshipLeafNodes(sentenceSyntacticalLeafNodeListMultiwords)
+
+		moveRelationshipSyntacticalNodes(sentenceSyntacticalLeafNodeListMultiwords, sentenceSyntacticalTreeNodeList)
+	elif(parserType == "constituencyParserFormal"):
+		pass
+		
+	#TODO: detect determiners and substance/quality structure
+	
 	if(drawSyntacticalGraphTemporaryAfterRelationshipTransformation):
 		ATNLPtf_syntacticalGraphDrawSentence.drawSyntacticalGraphSentence(syntacticalGraphHeadNode)
 		print("ATNLPtf_syntacticalGraphDrawSentence.displaySyntacticalGraph()")

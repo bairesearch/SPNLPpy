@@ -26,8 +26,8 @@ from ATNLPtf_syntacticalNodeClass import *
 import ATNLPtf_syntacticalGraphOperations
 import ATNLPtf_semanticGraphIntermediaryTransformation
 
-parserType = "constituencyParserWordVector"	#default algorithmATNLP:generateSyntacticalGraph
-#parserType = "constituencyParserFormal"
+#parserType = "constituencyParserWordVector"	#default algorithmATNLP:generateSyntacticalGraph
+parserType = "constituencyParserFormal"
 if(parserType == "constituencyParserWordVector"):
 	import ATNLPtf_syntacticalGraphConstituencyParserWordVectors
 elif(parserType == "constituencyParserFormal"):
@@ -40,7 +40,7 @@ if(drawSyntacticalGraphSentence):
 drawSyntacticalGraphNetwork	= True	#draw graph for entire network (not just sentence)
 if(drawSyntacticalGraphNetwork):
 	import ATNLPtf_syntacticalGraphDraw as ATNLPtf_syntacticalGraphDrawNetwork
-drawSyntacticalGraphNodeColours = False
+drawSyntacticalGraphNodeColours = False	#enable for debugging ATNLPtf_semanticGraphIntermediaryTransformation
 if(drawSyntacticalGraphNodeColours):
 	from ATNLPtf_semanticNodeClass import identifyEntityType
 
@@ -156,7 +156,7 @@ def generateSyntacticalGraphSentence(sentenceIndex, tokenisedSentence, performIn
 		ATNLPtf_syntacticalGraphDrawSentence.displaySyntacticalGraph()
 		
 	if(performIntermediarySemanticTransformation):
-		ATNLPtf_semanticGraphIntermediaryTransformation.performIntermediarySemanticTransformation(sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode)
+		ATNLPtf_semanticGraphIntermediaryTransformation.performIntermediarySemanticTransformation(parserType, sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode)
 			
 	if(generateSyntacticalGraphNetwork):
 		if(performReferenceResolution):
