@@ -1,4 +1,4 @@
-"""ATNLPtf_syntacticalGraph.py
+"""SPNLPpy_syntacticalGraph.py
 
 # Author:
 Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
@@ -7,42 +7,44 @@ Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
 MIT License
 
 # Installation:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Usage:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Description:
-ATNLP Syntactical Graph - generate syntactical tree/graph
+SPNLP Syntactical Graph - generate syntactical tree/graph
 
-ATNLP (or SANI) syntactical tree stucture is generated in a format similar to a constituency-based parse tree
+SPNLP (or SANI) syntactical tree stucture is generated in a format similar to a constituency-based parse tree
+
+- SPNLP syntactical graph (SPNLPpy_syntacticalGraphConstituencyParserWordVectors) is not equivalent to a formal/strict syntax tree or SANI tree, so apply a custom intermediary transformation for semantic graph construction 
 
 """
 
 import numpy as np
 import spacy
 spacyWordVectorGenerator = spacy.load('en_core_web_md')	#spacy.load('en_core_web_lg')
-from ATNLPtf_syntacticalNodeClass import *
-import ATNLPtf_syntacticalGraphOperations
-import ATNLPtf_semanticGraphIntermediaryTransformation
+from SPNLPpy_syntacticalNodeClass import *
+import SPNLPpy_syntacticalGraphOperations
+import SPNLPpy_semanticGraphIntermediaryTransformation
 
-#parserType = "constituencyParserWordVector"	#default algorithmATNLP:generateSyntacticalGraph
+#parserType = "constituencyParserWordVector"	#default algorithmSPNLP:generateSyntacticalGraph
 parserType = "constituencyParserFormal"
 if(parserType == "constituencyParserWordVector"):
-	import ATNLPtf_syntacticalGraphConstituencyParserWordVectors
+	import SPNLPpy_syntacticalGraphConstituencyParserWordVectors
 elif(parserType == "constituencyParserFormal"):
-	import ATNLPtf_syntacticalGraphConstituencyParserFormal	
-	ATNLPtf_syntacticalGraphConstituencyParserFormal.initalise(spacyWordVectorGenerator)	
+	import SPNLPpy_syntacticalGraphConstituencyParserFormal	
+	SPNLPpy_syntacticalGraphConstituencyParserFormal.initalise(spacyWordVectorGenerator)	
 
 drawSyntacticalGraphSentence = True
 if(drawSyntacticalGraphSentence):
-	import ATNLPtf_syntacticalGraphDraw as ATNLPtf_syntacticalGraphDrawSentence
+	import SPNLPpy_syntacticalGraphDraw as SPNLPpy_syntacticalGraphDrawSentence
 drawSyntacticalGraphNetwork	= True	#draw graph for entire network (not just sentence)
 if(drawSyntacticalGraphNetwork):
-	import ATNLPtf_syntacticalGraphDraw as ATNLPtf_syntacticalGraphDrawNetwork
-drawSyntacticalGraphNodeColours = False	#enable for debugging ATNLPtf_semanticGraphIntermediaryTransformation
+	import SPNLPpy_syntacticalGraphDraw as SPNLPpy_syntacticalGraphDrawNetwork
+drawSyntacticalGraphNodeColours = False	#enable for debugging SPNLPpy_semanticGraphIntermediaryTransformation
 if(drawSyntacticalGraphNodeColours):
-	from ATNLPtf_semanticNodeClass import identifyEntityType
+	from SPNLPpy_semanticNodeClass import identifyEntityType
 
 performReferenceResolution = True
 
@@ -76,16 +78,16 @@ def generateSyntacticalGraphSentenceString(sentenceIndex, sentence, performInter
 			
 def generateSyntacticalGraphSentence(sentenceIndex, tokenisedSentence, performIntermediarySemanticTransformation, generateSyntacticalGraphNetwork):
 
-	ATNLPtf_syntacticalGraphDrawSentence.setColourSyntacticalNodes(drawSyntacticalGraphNodeColours)
-	print("ATNLPtf_syntacticalGraph: ATNLPtf_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours = ", ATNLPtf_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours)
+	SPNLPpy_syntacticalGraphDrawSentence.setColourSyntacticalNodes(drawSyntacticalGraphNodeColours)
+	print("SPNLPpy_syntacticalGraph: SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours = ", SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours)
 	
-	currentTime = ATNLPtf_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
+	currentTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
 
 	if(drawSyntacticalGraphSentence):
-		ATNLPtf_syntacticalGraphDrawSentence.clearSyntacticalGraph()
+		SPNLPpy_syntacticalGraphDrawSentence.clearSyntacticalGraph()
 	if(generateSyntacticalGraphNetwork):
 		if(drawSyntacticalGraphNetwork):
-			ATNLPtf_syntacticalGraphDrawNetwork.clearSyntacticalGraph()
+			SPNLPpy_syntacticalGraphDrawNetwork.clearSyntacticalGraph()
 			
 	sentenceLeafNodeList = []	#local/temporary list of sentence instance nodes (before reference resolution)		
 	sentenceTreeNodeList = []	#local/temporary list of sentence instance nodes (before reference resolution)
@@ -102,13 +104,13 @@ def generateSyntacticalGraphSentence(sentenceIndex, tokenisedSentence, performIn
 		lemma = getTokenLemma(token)
 		wordVector = getTokenWordVector(token)	#numpy word vector
 		posTag = getTokenPOStag(token)
-		activationTime = ATNLPtf_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
+		activationTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
 		nodeGraphType = graphNodeTypeLeaf
 		
 		#sentenceTreeArtificial vars;
 		subgraphSize = 1
 		conceptWordVector = wordVector
-		conceptTime = ATNLPtf_syntacticalGraphOperations.calculateConceptTimeLeafNode(graphNodeDictionary, sentenceLeafNodeList, lemma, currentTime)	#units: min time diff (not recency metric)
+		conceptTime = SPNLPpy_syntacticalGraphOperations.calculateConceptTimeLeafNode(graphNodeDictionary, sentenceLeafNodeList, lemma, currentTime)	#units: min time diff (not recency metric)
 		treeLevel = 0
 
 		#if(addSyntacticalConceptNodesToGraph):
@@ -116,13 +118,13 @@ def generateSyntacticalGraphSentence(sentenceIndex, tokenisedSentence, performIn
 		#	if lemma not in graphNodeDictionary:
 		#		instanceID = conceptID
 		#		conceptNode = SyntacticalNode(instanceID, word, lemma, wordVector, posTag, nodeGraphType, currentTime, subgraphSize, conceptWordVector, conceptTime, w, w, w, treeLevel, sentenceIndex)
-		#		ATNLPtf_syntacticalGraphOperations.addInstanceNodeToGraph(graphNodeDictionary, lemma, instanceID, conceptNode)
+		#		SPNLPpy_syntacticalGraphOperations.addInstanceNodeToGraph(graphNodeDictionary, lemma, instanceID, conceptNode)
 
 		#add instance to local/temporary sentenceLeafNodeList (reference resolution is required before adding nodes to graph);
-		instanceID = ATNLPtf_syntacticalGraphOperations.getNewInstanceID(graphNodeDictionary, lemma)	#same instance id will be assigned to identical lemmas in sentence (which is not approprate in the case they refer to independent instances) - will be reassign instance id after reference resolution
+		instanceID = SPNLPpy_syntacticalGraphOperations.getNewInstanceID(graphNodeDictionary, lemma)	#same instance id will be assigned to identical lemmas in sentence (which is not approprate in the case they refer to independent instances) - will be reassign instance id after reference resolution
 		instanceNode = SyntacticalNode(instanceID, word, lemma, wordVector, posTag, nodeGraphType, currentTime, subgraphSize, conceptWordVector, conceptTime, w, w, w, treeLevel, sentenceIndex)
-		ATNLPtf_syntacticalGraphOperations.addInstanceNodeToGraph(graphNodeDictionary, lemma, instanceID, instanceNode)
-		if(ATNLPtf_syntacticalGraphOperations.printVerbose):
+		SPNLPpy_syntacticalGraphOperations.addInstanceNodeToGraph(graphNodeDictionary, lemma, instanceID, instanceNode)
+		if(SPNLPpy_syntacticalGraphOperations.printVerbose):
 			print("create new instanceNode; ", instanceNode.lemma, ": instanceID=", instanceNode.instanceID)
 
 		#connection vars;
@@ -134,39 +136,35 @@ def generateSyntacticalGraphSentence(sentenceIndex, tokenisedSentence, performIn
 			entityType = identifyEntityType(instanceNode)
 			instanceNode.entityType = entityType
 		if(drawSyntacticalGraphSentence):
-			ATNLPtf_syntacticalGraphDrawSentence.drawSyntacticalGraphNode(instanceNode, w, treeLevel)
+			SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNode(instanceNode, w, treeLevel)
 
 
 	if(parserType == "constituencyParserWordVector"):
-		graphHeadNode = ATNLPtf_syntacticalGraphConstituencyParserWordVectors.generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, sentenceTreeNodeList, connectivityStackNodeList, graphNodeDictionary)		
+		graphHeadNode = SPNLPpy_syntacticalGraphConstituencyParserWordVectors.generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, sentenceTreeNodeList, connectivityStackNodeList, graphNodeDictionary)		
 	elif(parserType == "constituencyParserFormal"):
-		graphHeadNode = ATNLPtf_syntacticalGraphConstituencyParserFormal.generateSyntacticalTreeConstituencyParserFormal(sentenceIndex, tokenisedSentence, sentenceLeafNodeList, sentenceTreeNodeList, graphNodeDictionary)
+		graphHeadNode = SPNLPpy_syntacticalGraphConstituencyParserFormal.generateSyntacticalTreeConstituencyParserFormal(sentenceIndex, tokenisedSentence, sentenceLeafNodeList, sentenceTreeNodeList, graphNodeDictionary)
 
 	headNodeList.append(graphHeadNode)
 
 	if(drawSyntacticalGraphSentence):
 		for hiddenNode in sentenceTreeNodeList:
 			if((hiddenNode.graphNodeType == graphNodeTypeBranch) or (hiddenNode.graphNodeType == graphNodeTypeHead)):
-				ATNLPtf_syntacticalGraphDrawSentence.drawSyntacticalGraphNode(hiddenNode, hiddenNode.w, hiddenNode.treeLevel)
-				for sourceNode in hiddenNode.graphNodeSourceList:
-					ATNLPtf_syntacticalGraphDrawSentence.drawSyntacticalGraphConnection(hiddenNode, sourceNode)
-
-	if(drawSyntacticalGraphSentence):
-		print("ATNLPtf_syntacticalGraphDrawSentence.displaySyntacticalGraph()")
-		ATNLPtf_syntacticalGraphDrawSentence.displaySyntacticalGraph()
+				SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeAndConnections(hiddenNode, drawGraph=False)
+		print("SPNLPpy_syntacticalGraphDrawSentence.displaySyntacticalGraph()")
+		SPNLPpy_syntacticalGraphDrawSentence.displaySyntacticalGraph()
 		
 	if(performIntermediarySemanticTransformation):
-		ATNLPtf_semanticGraphIntermediaryTransformation.performIntermediarySemanticTransformation(parserType, sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode)
+		SPNLPpy_semanticGraphIntermediaryTransformation.performIntermediarySemanticTransformation(parserType, sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode)
 			
 	if(generateSyntacticalGraphNetwork):
 		if(performReferenceResolution):
 			#peform reference resolution after building syntactical tree (any instance of successful reference identification will insert syntactical tree into syntactical graph/network)
-			ATNLPtf_syntacticalGraphOperations.identifyBranchReferences(graphNodeDictionary, sentenceTreeNodeList, graphHeadNode, currentTime)
+			SPNLPpy_syntacticalGraphOperations.identifyBranchReferences(graphNodeDictionary, sentenceTreeNodeList, graphHeadNode, currentTime)
 
 		if(drawSyntacticalGraphNetwork):
-			ATNLPtf_syntacticalGraphDrawNetwork.drawSyntacticalGraphNetwork(headNodeList)
-			print("ATNLPtf_syntacticalGraphDrawNetwork.displaySyntacticalGraph()")
-			ATNLPtf_syntacticalGraphDrawNetwork.displaySyntacticalGraph()
+			SPNLPpy_syntacticalGraphDrawNetwork.drawSyntacticalGraphNetwork(headNodeList)
+			print("SPNLPpy_syntacticalGraphDrawNetwork.displaySyntacticalGraph()")
+			SPNLPpy_syntacticalGraphDrawNetwork.displaySyntacticalGraph()
 				
 	return sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode
 

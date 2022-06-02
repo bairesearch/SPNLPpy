@@ -1,4 +1,4 @@
-"""ATNLPtf_syntacticalGraphDrawSentence.py
+"""SPNLPpy_syntacticalGraphDraw.py
 
 # Author:
 Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
@@ -7,20 +7,20 @@ Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
 MIT License
 
 # Installation:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Usage:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Description:
-ATNLP Syntactical Graph Draw Class
+SPNLP Syntactical Graph Draw Class
 
 """
 
 import networkx as nx
 import matplotlib.pyplot as plt
-import ATNLPtf_syntacticalNodeClass	#required for drawSyntacticalGraphSentence only
-from ATNLPtf_semanticGraphDraw import getEntityNodeColour
+import SPNLPpy_syntacticalNodeClass	#required for drawSyntacticalGraphSentence only
+from SPNLPpy_semanticGraphDraw import getEntityNodeColour
 
 syntacticalGraph = nx.Graph()
 syntacticalGraphNodeColorMap = []
@@ -75,7 +75,7 @@ def drawSyntacticalGraphSentence(syntacticalGraphNode, drawGraph=False):
 	
 def generateSyntacticalGraphNodeName(node):
 	if(drawSyntacticalGraphNodeColours):
-		if(node.graphNodeType == ATNLPtf_syntacticalNodeClass.graphNodeTypeLeaf):
+		if(node.graphNodeType == SPNLPpy_syntacticalNodeClass.graphNodeTypeLeaf):
 			#this is required to differentiate duplicate words in the sentence/article
 			nodeName = node.lemma + str("w") + str(node.w) + str("s") + str(node.sentenceIndex) 
 		else:
@@ -98,3 +98,13 @@ def drawSyntacticalGraphSentenceReset(syntacticalGraphNode):
 		syntacticalGraphNode.drawn = False
 		for sourceNode in syntacticalGraphNode.graphNodeSourceList:
 			drawSyntacticalGraphSentenceReset(sourceNode)	
+
+def drawSyntacticalGraphNodeAndConnections(syntacticalGraphNode, drawGraph=False):	
+	if(drawGraph):
+		sentenceIndex = syntacticalGraphNode.sentenceIndex
+	else:
+		 sentenceIndex = 0
+	drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.treeLevel, sentenceIndex)
+	for sourceNode in syntacticalGraphNode.graphNodeSourceList:
+		drawSyntacticalGraphConnection(syntacticalGraphNode, sourceNode)
+					

@@ -1,4 +1,4 @@
-"""ATNLPtf_semanticNodeClass.py
+"""SPNLPpy_semanticNodeClass.py
 
 # Author:
 Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
@@ -7,13 +7,13 @@ Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
 MIT License
 
 # Installation:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Usage:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Description:
-ATNLP Semantic Node Class
+SPNLP Semantic Node Class
 
 See GIA/GIAentityNodeClass.hpp for template
 
@@ -23,11 +23,11 @@ import numpy as np
 
 actionDetectionAnyCandidateVerbPOS = False	#if the word can
 if(actionDetectionAnyCandidateVerbPOS):
-	import ATNLPtf_getAllPossiblePosTags
+	import SPNLPpy_getAllPossiblePosTags
 	nltkPosTagTypeVerb = ["VB", "VBD", "VBG", "VBN", "VBP", "VBZ"]
 	#FUTURE: getAllPossiblePosTags for a word (context ignored) with spacy library
 
-GIA_ADD_ARTIFICIAL_AUXILIARY_FOR_ALL_PROPERTIES_AND_DEFINITIONS = False	#this feature is not currently supported by ATNLPtf_semanticGraph (GIA C++ implementation only)
+GIA_ADD_ARTIFICIAL_AUXILIARY_FOR_ALL_PROPERTIES_AND_DEFINITIONS = False	#this feature is not currently supported by SPNLPpy_semanticGraph (GIA C++ implementation only)
 
 
 #sync with LRPglobalsDefs.hpp;
@@ -137,7 +137,7 @@ class SemanticNode:
 		#GIA Entity Name;
 		self.entityName = entityName	#lemma
 		self.wordOrig = wordOrig	#word
-		self.wordVector = wordVector	#ATNLP introduction to better support /aliases (not yet implemented in GIA)
+		self.wordVector = wordVector	#SPNLP introduction to better support /aliases (not yet implemented in GIA)
 
 		#GIA Entity Type;
 		self.entityType = entityType
@@ -240,7 +240,7 @@ def identifyEntityType(syntacticalNode):
 
 		if(actionDetectionAnyCandidateVerbPOS):
 			#override action dection using any candidate Verb POS 
-			posValues = ATNLPtf_getAllPossiblePosTags.getAllPossiblePosTags(syntacticalNode.word)
+			posValues = SPNLPpy_getAllPossiblePosTags.getAllPossiblePosTags(syntacticalNode.word)
 			if(posValues in nltkPosTagTypeVerb):
 				entityType = GIA_ENTITY_TYPE_ACTION
 	else:

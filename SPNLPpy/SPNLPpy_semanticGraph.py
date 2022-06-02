@@ -1,4 +1,4 @@
-"""ATNLPtf_semanticGraph.py
+"""SPNLPpy_semanticGraph.py
 
 # Author:
 Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
@@ -7,34 +7,33 @@ Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
 MIT License
 
 # Installation:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Usage:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Description:
-ATNLP Semantic Graph - generate semantic graph/network based on a transformation of the ATNLP syntactical tree/graph
+SPNLP Semantic Graph - generate semantic graph/network based on a transformation of the SPNLP syntactical tree/graph
 
-- semantic graph constructed based on GIA specification/implementation (ATNLPtf_semanticGraph is a minimal python implementation of GIA)
+- semantic graph constructed based on GIA specification/implementation (SPNLPpy_semanticGraph is a minimal python implementation of GIA)
 - GIAposRelTranslator applies a similar (axis orthogonal) transformation to a SANI graph to generate a GIA semantic graph (semantic relation/connection identification)
-- ATNLP syntactical graph is not equivalent to a formal/strict syntax tree or SANI tree, so apply a custom transformation for semantic graph construction 
 
 """
 
 import numpy as np
 import spacy
-from ATNLPtf_semanticNodeClass import *
-from ATNLPtf_syntacticalNodeClass import *
-import ATNLPtf_semanticGraphIntermediaryTransformation
+from SPNLPpy_semanticNodeClass import *
+from SPNLPpy_syntacticalNodeClass import *
+import SPNLPpy_semanticGraphIntermediaryTransformation
 
 supportMultiwordVerbsPrepositions = True
 
 drawSemanticGraphSentence = False
 if(drawSemanticGraphSentence):
-	import ATNLPtf_semanticGraphDraw as ATNLPtf_semanticGraphDrawSentence
+	import SPNLPpy_semanticGraphDraw as SPNLPpy_semanticGraphDrawSentence
 drawSemanticGraphNetwork = False
 if(drawSemanticGraphNetwork):
-	import ATNLPtf_semanticGraphDraw as ATNLPtf_semanticGraphDrawNetwork
+	import SPNLPpy_semanticGraphDraw as SPNLPpy_semanticGraphDrawNetwork
 
 
 def initialiseSemanticGraph():
@@ -42,7 +41,7 @@ def initialiseSemanticGraph():
 	
 def finaliseSemanticGraph():
 	if(drawSemanticGraphNetwork):
-		ATNLPtf_semanticGraphDrawNetwork.displaySemanticGraph()
+		SPNLPpy_semanticGraphDrawNetwork.displaySemanticGraph()
 		
 def generateSemanticGraphNetwork(articles, performIntermediarySemanticTransformation):
 
@@ -50,23 +49,23 @@ def generateSemanticGraphNetwork(articles, performIntermediarySemanticTransforma
 		generateSyntacticalGraphSentenceString(sentenceIndex, sentence, performIntermediarySemanticTransformation)		
 
 	if(drawSyntacticalGraphNetwork):
-		ATNLPtf_syntacticalGraphDrawNetwork.displaySyntacticalGraph()
+		SPNLPpy_syntacticalGraphDrawNetwork.displaySyntacticalGraph()
 		
 						
 def generateSemanticGraph(sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList, syntacticalGraphHeadNode, performIntermediarySemanticTransformation):
 
 	if(performIntermediarySemanticTransformation):
-		ATNLPtf_semanticGraphIntermediaryTransformation.performIntermediarySemanticTransformation(sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList, syntacticalGraphHeadNode)
+		SPNLPpy_semanticGraphIntermediaryTransformation.performIntermediarySemanticTransformation(sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList, syntacticalGraphHeadNode)
 
 	if(drawSemanticGraphSentence):
-		ATNLPtf_semanticGraphDraw.clearSemanticGraph()
+		SPNLPpy_semanticGraphDraw.clearSemanticGraph()
 	
 	sentenceSemanticNodeList = []
 	generateSemanticNodes(sentenceSemanticNodeList, sentenceSyntacticalLeafNodeList)		
 	#convertToSemanticGraph(sentenceSemanticNodeList, sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList)	#TODO
 
 	if(drawSemanticGraphSentence):
-		ATNLPtf_semanticGraphDraw.displaySemanticGraph()
+		SPNLPpy_semanticGraphDraw.displaySemanticGraph()
 
 
 def generateSemanticNodes(sentenceSemanticNodeList, sentenceSyntacticalLeafNodeList):
@@ -76,6 +75,6 @@ def generateSemanticNodes(sentenceSemanticNodeList, sentenceSyntacticalLeafNodeL
 		semanticNode = SemanticNode(syntacticalNode.instanceID, entityName, syntacticalNode.word, syntacticalNode.wordVector, syntacticalNode.entityType)
 		sentenceSemanticNodeList.append(semanticNode)
 		if(drawSemanticGraph):
-			ATNLPtf_semanticGraphDraw.drawSemanticGraphNode(entityName)	#do not manually define a position (automatically generated)
+			SPNLPpy_semanticGraphDraw.drawSemanticGraphNode(entityName)	#do not manually define a position (automatically generated)
 
 

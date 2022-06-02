@@ -1,4 +1,4 @@
-"""ATNLPtf_syntacticalGraphOperations.py
+"""SPNLPpy_syntacticalGraphOperations.py
 
 # Author:
 Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
@@ -7,19 +7,19 @@ Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
 MIT License
 
 # Installation:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Usage:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Description:
-ATNLP Syntactical Graph Operations - common operations
+SPNLP Syntactical Graph Operations - common operations
 
 """
 
 import numpy as np
 import ANNtf2_loadDataset
-from ATNLPtf_syntacticalNodeClass import *
+from SPNLPpy_syntacticalNodeClass import *
 
 printVerbose = False
 

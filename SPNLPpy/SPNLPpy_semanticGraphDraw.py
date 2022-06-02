@@ -1,4 +1,4 @@
-"""ATNLPtf_semanticGraphDraw.py
+"""SPNLPpy_semanticGraphDraw.py
 
 # Author:
 Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
@@ -7,20 +7,20 @@ Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
 MIT License
 
 # Installation:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Usage:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Description:
-ATNLP Semantic Graph Draw Class
+SPNLP Semantic Graph Draw Class
 
 See GIA/GIAdraw.hpp for template
 See SHARED/SHAREDglobalDefs.hpp for template (colours)
 
 """
 
-import ATNLPtf_semanticNodeClass
+import SPNLPpy_semanticNodeClass
 
 
 #sync with SHARED/SHAREDglobalDefs.hpp;
@@ -144,7 +144,7 @@ LRP_SHARED_ENTITY_CONNECTION_TYPE_REFERENCE_COLOUR = (SHARED_COLOUR_YELLOW)
 
 GIA_DRAW_USE_UNIQUE_COLOURS_FOR_ENTITY_DEFINITION_NODES	= True
 GIA_DRAW_USE_UNIQUE_COLOURS_FOR_ENTITY_CONNECTIONS = False
-if(not(ATNLPtf_semanticNodeClass.GIA_ADD_ARTIFICIAL_AUXILIARY_FOR_ALL_PROPERTIES_AND_DEFINITIONS)):
+if(not(SPNLPpy_semanticNodeClass.GIA_ADD_ARTIFICIAL_AUXILIARY_FOR_ALL_PROPERTIES_AND_DEFINITIONS)):
 	GIA_DRAW_USE_UNIQUE_COLOURS_FOR_ENTITY_CONNECTIONS = True
 
 GIA_DRAW_RELATIONSHIP_SUBJECT_CONNECTION_COLOUR = (SHARED_COLOUR_BLACK)	#SHARED_COLOUR_AQUA		#this was black SHARED_COLOUR_BLACK in the original spec

@@ -855,7 +855,7 @@ def loadDatasetType4(datasetFileNameX, limitSentenceLengths, limitSentenceLength
 		
 	return articles
 
-#code moved from AEANNtf_main.py/AEANNtf_algorithmSequentialInput.py | ATNLPtf_normalisation.py;
+#code moved from AEANNtf_main.py/AEANNtf_algorithmSequentialInput.py | SPNLPpy_normalisation.py;
 #should be defined as preprocessor defs (non-variable);
 NLPsequentialInputTypeCharacters = 0
 NLPsequentialInputTypeWords = 1

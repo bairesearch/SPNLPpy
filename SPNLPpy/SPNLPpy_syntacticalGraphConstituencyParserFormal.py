@@ -1,4 +1,4 @@
-"""ATNLPtf_syntacticalGraphConstituencyParserFormal.py
+"""SPNLPpy_syntacticalGraphConstituencyParserFormal.py
 
 # Author:
 Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
@@ -7,13 +7,13 @@ Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
 MIT License
 
 # Installation:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Usage:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Description:
-ATNLP Syntactical Graph Constituency Parser Formal - external python constituency-based parse tree generation
+SPNLP Syntactical Graph Constituency Parser Formal - external python constituency-based parse tree generation
 
 Preconditions: assumes leaf nodes already generated
 
@@ -22,8 +22,8 @@ Preconditions: assumes leaf nodes already generated
 import numpy as np
 import spacy
 import benepar
-from ATNLPtf_syntacticalNodeClass import *
-import ATNLPtf_syntacticalGraphOperations
+from SPNLPpy_syntacticalNodeClass import *
+import SPNLPpy_syntacticalGraphOperations
 import nltk
 benepar.download('benepar_en3')	#Berkeley constituency parser
  
@@ -47,10 +47,10 @@ def generateSyntacticalTree(constituent, sentenceIndex, sentenceLeafNodeList, se
 
 	constituentText = constituent
 	constituentLabel = constituent._.labels	#or constituent.labels
-	if(ATNLPtf_syntacticalGraphOperations.printVerbose):
+	if(SPNLPpy_syntacticalGraphOperations.printVerbose):
 		print("generateSyntacticalTree: constituentText = ", constituentText, ", constituentLabel = ", constituentLabel)
 	
-	currentTime = ATNLPtf_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
+	currentTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
 
 	numberOfChildren = len(list(constituent._.children))
 	if(isHead):
@@ -70,7 +70,7 @@ def generateSyntacticalTree(constituent, sentenceIndex, sentenceLeafNodeList, se
 		lemma = ""
 		wordVectorSum = 0
 		posTag = None
-		activationTime = ATNLPtf_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)	#mean([connectionNode1.activationTime, connectionNode2.activationTime]) 
+		activationTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)	#mean([connectionNode1.activationTime, connectionNode2.activationTime]) 
 
 		#sentenceTreeArtificial vars;
 		subgraphSize = 0
@@ -91,7 +91,7 @@ def generateSyntacticalTree(constituent, sentenceIndex, sentenceLeafNodeList, se
 			lemma = lemma + childNode.lemma
 			wordVectorSum = childNode.wordVector + wordVectorSum
 			posTag = None
-			activationTime = ATNLPtf_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)	#mean([connectionNode1.activationTime, connectionNode2.activationTime]) 
+			activationTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)	#mean([connectionNode1.activationTime, connectionNode2.activationTime]) 
 
 			#sentenceTreeArtificial vars;
 			subgraphSize = subgraphSize + childNode.subgraphSize
@@ -107,13 +107,13 @@ def generateSyntacticalTree(constituent, sentenceIndex, sentenceLeafNodeList, se
 		#perform averages;
 		treeLevel = treeLevel + 1
 		w = wSum/numberOfChildren	#mean
-		wordVector = ATNLPtf_syntacticalGraphOperations.getBranchWordVectorFromSourceNodesSum(wordVectorSum, conceptWordVector, subgraphSize, numberOfChildren)
+		wordVector = SPNLPpy_syntacticalGraphOperations.getBranchWordVectorFromSourceNodesSum(wordVectorSum, conceptWordVector, subgraphSize, numberOfChildren)
 		subgraphSize = subgraphSize + 1
 		
-		instanceID = ATNLPtf_syntacticalGraphOperations.getNewInstanceID(graphNodeDictionary, lemma)
+		instanceID = SPNLPpy_syntacticalGraphOperations.getNewInstanceID(graphNodeDictionary, lemma)
 		hiddenNode = SyntacticalNode(instanceID, word, lemma, wordVector, posTag, nodeGraphType, currentTime, subgraphSize, conceptWordVector, conceptTime, w, wMin, wMax, treeLevel, sentenceIndex)
 		hiddenNode.constituencyParserLabel = constituentLabel
-		ATNLPtf_syntacticalGraphOperations.addInstanceNodeToGraph(graphNodeDictionary, lemma, instanceID, hiddenNode)
+		SPNLPpy_syntacticalGraphOperations.addInstanceNodeToGraph(graphNodeDictionary, lemma, instanceID, hiddenNode)
 		
 		#connection vars;
 		for childNode in childNodeList:

@@ -1,4 +1,4 @@
-"""ATNLPtf_syntacticalNodeClass.py
+"""SPNLPpy_syntacticalNodeClass.py
 
 # Author:
 Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
@@ -7,13 +7,13 @@ Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
 MIT License
 
 # Installation:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Usage:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Description:
-ATNLP Syntactical Node Class
+SPNLP Syntactical Node Class
 
 """
 
@@ -33,7 +33,6 @@ graphNodeTargetIndex = 0	#should only contain one element
 graphNodeSourceIndexFirst = 0	#should only contain 2 elements
 graphNodeSourceIndexSecond = 1	#should only contain 2 elements
 
-#FUTURE: move these to ATNLPtf_syntacticalNodeClass;
 class SyntacticalNode:
 	def __init__(self, instanceID, word, lemma, wordVector, posTag, nodeGraphType, activationTime, subgraphSize, conceptWordVector, conceptTime, w, wMin, wMax, treeLevel, sentenceIndex):
 		#primary vars;

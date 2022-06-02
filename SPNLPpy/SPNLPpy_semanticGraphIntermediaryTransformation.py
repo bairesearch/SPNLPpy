@@ -1,4 +1,4 @@
-"""ATNLPtf_semanticGraphIntermediaryTransformation.py
+"""SPNLPpy_semanticGraphIntermediaryTransformation.py
 
 # Author:
 Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
@@ -7,35 +7,35 @@ Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
 MIT License
 
 # Installation:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Usage:
-see ATNLPtf_main.py
+see SPNLPpy_main.py
 
 # Description:
-ATNLP Semantic Graph Intermediary Transformation - perform intermediary semantic transformation of syntactical graph (move relationship nodes)
+SPNLP Semantic Graph Intermediary Transformation - perform intermediary semantic transformation of syntactical graph (move relationship nodes)
 
 """
 
 import numpy as np
 import spacy
-from ATNLPtf_syntacticalNodeClass import *
-import ATNLPtf_semanticNodeClass
+from SPNLPpy_syntacticalNodeClass import *
+import SPNLPpy_semanticNodeClass
 
 supportMultiwordVerbsPrepositions = True
 
 drawSyntacticalGraphTemporaryAfterRelationshipTransformation = True	#for visual debug after moveRelationshipSyntacticalNodes phase
 if(drawSyntacticalGraphTemporaryAfterRelationshipTransformation):
-	import ATNLPtf_syntacticalGraphDraw as ATNLPtf_syntacticalGraphDrawSentence
+	import SPNLPpy_syntacticalGraphDraw as SPNLPpy_syntacticalGraphDrawSentence
  
 
 def performIntermediarySemanticTransformation(parserType, sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList, syntacticalGraphHeadNode):
 
-	ATNLPtf_syntacticalGraphDrawSentence.setColourSyntacticalNodes(True)	#always color nodes when generating intermedary transformation graph
-	print("ATNLPtf_semanticGraphIntermediaryTransformation: ATNLPtf_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours = ", ATNLPtf_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours)
+	SPNLPpy_syntacticalGraphDrawSentence.setColourSyntacticalNodes(True)	#always color nodes when generating intermedary transformation graph
+	print("SPNLPpy_semanticGraphIntermediaryTransformation: SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours = ", SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours)
 	
 	if(drawSyntacticalGraphTemporaryAfterRelationshipTransformation):
-		ATNLPtf_syntacticalGraphDrawSentence.clearSyntacticalGraph()
+		SPNLPpy_syntacticalGraphDrawSentence.clearSyntacticalGraph()
 
 	identifyEntityTypes(sentenceSyntacticalLeafNodeList)		
 	
@@ -52,21 +52,21 @@ def performIntermediarySemanticTransformation(parserType, sentenceSyntacticalLea
 	#TODO: detect determiners and substance/quality structure
 	
 	if(drawSyntacticalGraphTemporaryAfterRelationshipTransformation):
-		ATNLPtf_syntacticalGraphDrawSentence.drawSyntacticalGraphSentence(syntacticalGraphHeadNode)
-		print("ATNLPtf_syntacticalGraphDrawSentence.displaySyntacticalGraph()")
-		ATNLPtf_syntacticalGraphDrawSentence.displaySyntacticalGraph()
+		SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphSentence(syntacticalGraphHeadNode)
+		print("SPNLPpy_syntacticalGraphDrawSentence.displaySyntacticalGraph()")
+		SPNLPpy_syntacticalGraphDrawSentence.displaySyntacticalGraph()
 
 
 def identifyEntityTypes(sentenceSyntacticalLeafNodeList):
 	for syntacticalNode in sentenceSyntacticalLeafNodeList:
 		entityName = syntacticalNode.lemma 
-		entityType = ATNLPtf_semanticNodeClass.identifyEntityType(syntacticalNode)
+		entityType = SPNLPpy_semanticNodeClass.identifyEntityType(syntacticalNode)
 		syntacticalNode.entityType = entityType
 
 def identifyMultiwordRelationshipLeafNodes(sentenceSyntacticalLeafNodeList):
-	#in case ATNLPtf_syntacticalGraph.drawSyntacticalGraphNodeColours = False;
+	#in case SPNLPpy_syntacticalGraph.drawSyntacticalGraphNodeColours = False;
 	for syntacticalNode in sentenceSyntacticalLeafNodeList:
-		entityType = ATNLPtf_semanticNodeClass.identifyEntityType(syntacticalNode)
+		entityType = SPNLPpy_semanticNodeClass.identifyEntityType(syntacticalNode)
 		syntacticalNode.entityType = entityType
 		
 	#CHECKTHIS: currently only support 2 word multiword verbs/prepositions
@@ -99,10 +99,10 @@ def identifyMultiwordRelationshipLeafNodes(sentenceSyntacticalLeafNodeList):
 
 def isMultiwordRelationship(sourceNode1, sourceNode2):
 	relationshipEntity = False
-	if(ATNLPtf_semanticNodeClass.entityTypeIsRelationship(sourceNode1.entityType) and ATNLPtf_semanticNodeClass.entityTypeIsRelationship(sourceNode2.entityType)):
+	if(SPNLPpy_semanticNodeClass.entityTypeIsRelationship(sourceNode1.entityType) and SPNLPpy_semanticNodeClass.entityTypeIsRelationship(sourceNode2.entityType)):
 		relationshipEntity = True
 	else:
-		for multiwordRelationshipSpecial in ATNLPtf_semanticNodeClass.multiwordRelationshipSpecialList:
+		for multiwordRelationshipSpecial in SPNLPpy_semanticNodeClass.multiwordRelationshipSpecialList:
 			if((sourceNode1.lemma == multiwordRelationshipSpecial[0]) and (sourceNode2.lemma == multiwordRelationshipSpecial[1])):
 				relationshipEntity = True
 				print("multiwordRelationshipSpecial found")
@@ -112,8 +112,8 @@ def moveRelationshipSyntacticalNodes(sentenceSyntacticalLeafNodeList, sentenceSy
 				
 	#CHECKTHIS: parse syntactical graph leafs from left to right;
 	for leafNodeIndex, leafNode in enumerate(sentenceSyntacticalLeafNodeList):
-		entityType = ATNLPtf_semanticNodeClass.identifyEntityType(leafNode)
-		if(ATNLPtf_semanticNodeClass.entityTypeIsRelationship(entityType)):
+		entityType = SPNLPpy_semanticNodeClass.identifyEntityType(leafNode)
+		if(SPNLPpy_semanticNodeClass.entityTypeIsRelationship(entityType)):
 			#print("entityTypeIsRelationship")
 			#if first or last leaf in syntactical branch is relationship node (verb/proposition:action/condition) - transport the adjacent branch contents to the subject/object of the relationship node, and place the relationship node between the two branches;
 			if(leafNode.sourceNodePosition == sourceNodePositionFirst):
@@ -141,7 +141,7 @@ def moveRelationshipSyntacticalNodes(sentenceSyntacticalLeafNodeList, sentenceSy
 				branchHeadSourceSecondFound = True
 			else:
 				#tree head found before finding final matched branch head
-				if(ATNLPtf_semanticNodeClass.entityIsRelationshipAction(entityType)):
+				if(SPNLPpy_semanticNodeClass.entityIsRelationshipAction(entityType)):
 					#relationship node found without either a subject or object
 					if(leafNode.sourceNodePosition == sourceNodePositionFirst):
 						#relationship node found without subject
@@ -149,7 +149,7 @@ def moveRelationshipSyntacticalNodes(sentenceSyntacticalLeafNodeList, sentenceSy
 					elif(leafNode.sourceNodePosition == sourceNodePositionSecond):
 						#relationship node found without object
 						branchHeadSourceFirstFound = True
-				elif(ATNLPtf_semanticNodeClass.entityIsRelationshipCondition(entityType)):
+				elif(SPNLPpy_semanticNodeClass.entityIsRelationshipCondition(entityType)):
 					print("moveRelationshipSyntacticalNodes error: condition (preposition) entities require subject and object")
 					exit()
 
