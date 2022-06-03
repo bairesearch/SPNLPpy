@@ -7,8 +7,6 @@ Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
 MIT License
 
 # Installation:
-Python 3 and Tensorflow 2.1+ 
-
 conda create -n anntf2 python=3.7
 source activate anntf2
 conda install nltk
@@ -52,31 +50,24 @@ debugUseSmallSequentialInputDataset = False
 if(algorithmSPNLP == "generateSyntacticalGraph"):
 	import SPNLPpy_syntacticalGraph
 	NLPsequentialInputTypeTokeniseWords = False	#perform spacy tokenization later in pipeline
-	performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph = True	#optional
-	generateSyntacticalGraphNetwork = True	#optional	#generate referenced syntactical network
+	performIntermediarySyntacticalTransformation = False	#optional
+	generateSyntacticalGraphNetwork = True	#recommended	#generate referenced syntactical network
+	identifySyntacticalDependencyRelations = True	#optional
 elif(algorithmSPNLP == "generateSemanticGraph"):
 	import SPNLPpy_syntacticalGraph
 	import SPNLPpy_semanticGraph
-	performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph = False	#optional
-	generateSyntacticalGraphNetwork = False	#optional	#generate semantic network from referenced syntactical network
+	generateSyntacticalGraphNetwork = False
+	performIntermediarySyntacticalTransformation = True	#optional
+	identifySyntacticalDependencyRelations = True	#mandatory	#dependency relation identification is required to generate semantic network from syntactical network
+	generateSemanticGraphNetwork = True	#recommended	#generate referenced semantic network
 	NLPsequentialInputTypeTokeniseWords = False	#perform spacy tokenization later in pipeline
 
-supportBatchAndMultiAbstractionLevelProcessing = False		#batches are not currently processed/normalised in parallel (retained for source base compatibility);
-if(supportBatchAndMultiAbstractionLevelProcessing):
-	import SPNLPpy_processingBatchAndMultiAbstractionLevel
-	NLPsequentialInputTypeMinWordVectors = SPNLPpy_processingBatchAndMultiAbstractionLevel.NLPsequentialInputTypeMinWordVectors
-	NLPsequentialInputTypeMaxWordVectors = SPNLPpy_processingBatchAndMultiAbstractionLevel.NLPsequentialInputTypeMaxWordVectors
-	limitSentenceLengthsSize = SPNLPpy_processingBatchAndMultiAbstractionLevel.limitSentenceLengthsSize
-	limitSentenceLengths = SPNLPpy_processingBatchAndMultiAbstractionLevel.useSmallSentenceLengths
-	NLPsequentialInputTypeTrainWordVectors = SPNLPpy_processingBatchAndMultiAbstractionLevel.NLPsequentialInputTypeTrainWordVectors	
-else:
-	#mandatory for !supportBatchAndMultiAbstractionLevelProcessing;
-	NLPsequentialInputTypeMinWordVectors = True
-	NLPsequentialInputTypeMaxWordVectors = True
-	limitSentenceLengthsSize = None
-	limitSentenceLengths = False
-	NLPsequentialInputTypeTrainWordVectors = False
-	wordVectorLibraryNumDimensions = 300	#https://spacy.io/models/en#en_core_web_md (300 dimensions)
+NLPsequentialInputTypeMinWordVectors = True
+NLPsequentialInputTypeMaxWordVectors = True
+limitSentenceLengthsSize = None
+limitSentenceLengths = False
+NLPsequentialInputTypeTrainWordVectors = False
+wordVectorLibraryNumDimensions = 300	#https://spacy.io/models/en#en_core_web_md (300 dimensions)
 
 trainMultipleFiles = False	#can set to true for production (after testing algorithm)
 numEpochs = 1
@@ -182,10 +173,7 @@ def trainSequentialInput(trainMultipleFiles=False):
 			#print("articles = ", articles)
 			#print("listDimensions(articles) = ", listDimensions(articles))
 			
-			if(supportBatchAndMultiAbstractionLevelProcessing):
-				SPNLPpy_processingBatchAndMultiAbstractionLevel.processingBatchAndMultiAbstractionLevel(articles)
-			else:
-				processingSimple(articles)
+			processingSimple(articles)
 					
 						
 def processingSimple(articles):
@@ -194,17 +182,11 @@ def processingSimple(articles):
 		articles = ANNtf2_loadDataset.flattenNestedListToSentences(articles)
 
 	if(algorithmSPNLP == "generateSyntacticalGraph"):
-		syntacticalGraphNetwork = SPNLPpy_syntacticalGraph.generateSyntacticalGraphNetwork(articles, performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph, generateSyntacticalGraphNetwork)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence		
+		syntacticalGraphNetwork = SPNLPpy_syntacticalGraph.generateSyntacticalGraphNetwork(articles, performIntermediarySyntacticalTransformation, generateSyntacticalGraphNetwork, identifySyntacticalDependencyRelations)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence		
 	elif(algorithmSPNLP == "generateSemanticGraph"):
-		if(generateSyntacticalGraphNetwork):
-			syntacticalGraphNetwork = SPNLPpy_syntacticalGraph.generateSyntacticalGraphNetwork(articles, performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph, generateSyntacticalGraphNetwork)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence		
-			SPNLPpy_semanticGraph.generateSemanticGraphNetwork(articles, syntacticalGraphNetwork, (not performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph))					
-		else:
-			SPNLPpy_semanticGraph.initialiseSemanticGraph()		
-			for sentenceIndex, sentence in enumerate(articles):
-				sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode = SPNLPpy_syntacticalGraph.generateSyntacticalGraphSentenceString(sentenceIndex, textContentList, performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence
-				SPNLPpy_semanticGraph.generateSemanticGraphSentence(sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode, (not performIntermediarySemanticTransformationBeforeGeneratingSyntacticalGraph))		
-			SPNLPpy_semanticGraph.finaliseSemanticGraph()		
+		for sentenceIndex, sentence in enumerate(articles):
+			sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode = SPNLPpy_syntacticalGraph.generateSyntacticalGraphSentenceString(sentenceIndex, textContentList, performIntermediarySyntacticalTransformation, generateSyntacticalGraphNetwork, identifySyntacticalDependencyRelations)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence
+			SPNLPpy_semanticGraph.generateSemanticGraphSentence(sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode, generateSemanticGraphNetwork)		
 							
 def trainSequentialInputNetworkSimple(articles):
 	for sentenceIndex, sentence in enumerate(articles):

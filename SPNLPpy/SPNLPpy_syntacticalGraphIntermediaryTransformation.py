@@ -1,4 +1,4 @@
-"""SPNLPpy_semanticGraphIntermediaryTransformation.py
+"""SPNLPpy_syntacticalGraphIntermediaryTransformation.py
 
 # Author:
 Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
@@ -13,7 +13,7 @@ see SPNLPpy_main.py
 see SPNLPpy_main.py
 
 # Description:
-SPNLP Semantic Graph Intermediary Transformation - perform intermediary semantic transformation of syntactical graph (move relationship nodes)
+SPNLP Syntactical Graph Intermediary Transformation - perform intermediary syntactical transformation of syntactical graph (move relationship nodes)
 
 """
 
@@ -29,14 +29,11 @@ if(drawSyntacticalGraphTemporaryAfterRelationshipTransformation):
 	import SPNLPpy_syntacticalGraphDraw as SPNLPpy_syntacticalGraphDrawSentence
  
 
-def performIntermediarySemanticTransformation(parserType, sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList, syntacticalGraphHeadNode):
+def performIntermediarySyntacticalTransformation(parserType, sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList, syntacticalGraphHeadNode):
 
 	SPNLPpy_syntacticalGraphDrawSentence.setColourSyntacticalNodes(True)	#always color nodes when generating intermedary transformation graph
-	print("SPNLPpy_semanticGraphIntermediaryTransformation: SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours = ", SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours)
+	print("SPNLPpy_syntacticalGraphIntermediaryTransformation: SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours = ", SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours)
 	
-	if(drawSyntacticalGraphTemporaryAfterRelationshipTransformation):
-		SPNLPpy_syntacticalGraphDrawSentence.clearSyntacticalGraph()
-
 	identifyEntityTypes(sentenceSyntacticalLeafNodeList)		
 	
 	if(parserType == "constituencyParserWordVector"):
@@ -52,7 +49,8 @@ def performIntermediarySemanticTransformation(parserType, sentenceSyntacticalLea
 	#TODO: detect determiners and substance/quality structure
 	
 	if(drawSyntacticalGraphTemporaryAfterRelationshipTransformation):
-		SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphSentence(syntacticalGraphHeadNode)
+		SPNLPpy_syntacticalGraphDrawSentence.clearSyntacticalGraph()
+		SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphSentence(syntacticalGraphHeadNode, SPNLPpy_syntacticalGraphDrawSentence.syntacticalGraphTypeConstituencyTree, drawGraphNetwork=True)
 		print("SPNLPpy_syntacticalGraphDrawSentence.displaySyntacticalGraph()")
 		SPNLPpy_syntacticalGraphDrawSentence.displaySyntacticalGraph()
 
@@ -65,9 +63,7 @@ def identifyEntityTypes(sentenceSyntacticalLeafNodeList):
 
 def identifyMultiwordRelationshipLeafNodes(sentenceSyntacticalLeafNodeList):
 	#in case SPNLPpy_syntacticalGraph.drawSyntacticalGraphNodeColours = False;
-	for syntacticalNode in sentenceSyntacticalLeafNodeList:
-		entityType = SPNLPpy_semanticNodeClass.identifyEntityType(syntacticalNode)
-		syntacticalNode.entityType = entityType
+	identifyEntityTypes(sentenceSyntacticalLeafNodeList)
 		
 	#CHECKTHIS: currently only support 2 word multiword verbs/prepositions
 	leafNodesToRemove = []

@@ -21,14 +21,13 @@ Preconditions: assumes leaf nodes already generated
 
 import numpy as np
 import spacy
-spacyWordVectorGenerator = spacy.load('en_core_web_md')	#spacy.load('en_core_web_lg')
 import ANNtf2_loadDataset
 from SPNLPpy_syntacticalNodeClass import *
 import SPNLPpy_syntacticalGraphOperations
 
 calibrateConnectionMetricParameters = True
 
-def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, sentenceTreeNodeList, connectivityStackNodeList, graphNodeDictionary):
+def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, sentenceTreeNodeList, connectivityStackNodeList, syntacticalGraphNodeDictionary):
 
 	currentTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
 
@@ -94,17 +93,17 @@ def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentence
 		nodeGraphType = graphNodeTypeBranch
 
 		#sentenceTreeArtificial vars;
-		subgraphSize = connectionNode1.subgraphSize + connectionNode2.subgraphSize + 1
+		constituencyParserSubgraphSize = connectionNode1.constituencyParserSubgraphSize + connectionNode2.constituencyParserSubgraphSize + 1
 		conceptWordVector = np.add(connectionNode1.conceptWordVector, connectionNode2.conceptWordVector)
 		conceptTime = connectionNode1.conceptTime + connectionNode2.conceptTime
-		treeLevel = max(connectionNode1.treeLevel, connectionNode2.treeLevel) + 1
+		constituencyParserTreeLevel = max(connectionNode1.constituencyParserTreeLevel, connectionNode2.constituencyParserTreeLevel) + 1
 		w = SPNLPpy_syntacticalGraphOperations.mean([connectionNode1.w, connectionNode2.w])
 		wMin = min(connectionNode1.wMin, connectionNode2.wMin)
 		wMax = max(connectionNode1.wMax, connectionNode2.wMax)
 
-		instanceID = SPNLPpy_syntacticalGraphOperations.getNewInstanceID(graphNodeDictionary, lemma)
-		hiddenNode = SyntacticalNode(instanceID, word, lemma, wordVector, posTag, nodeGraphType, currentTime, subgraphSize, conceptWordVector, conceptTime, w, wMin, wMax, treeLevel, sentenceIndex)
-		SPNLPpy_syntacticalGraphOperations.addInstanceNodeToGraph(graphNodeDictionary, lemma, instanceID, hiddenNode)
+		instanceID = SPNLPpy_syntacticalGraphOperations.getNewInstanceID(syntacticalGraphNodeDictionary, lemma)
+		hiddenNode = SyntacticalNode(instanceID, word, lemma, wordVector, posTag, nodeGraphType, currentTime, constituencyParserSubgraphSize, conceptWordVector, conceptTime, w, wMin, wMax, constituencyParserTreeLevel, sentenceIndex)
+		SPNLPpy_syntacticalGraphOperations.addInstanceNodeToGraph(syntacticalGraphNodeDictionary, lemma, instanceID, hiddenNode)
 		
 		#connection vars;
 		SPNLPpy_syntacticalGraphOperations.createGraphConnectionWrapper(hiddenNode, connectionNode1, connectionNode2, connectionDirection, addToConnectionsDictionary=False)

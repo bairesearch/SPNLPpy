@@ -22,6 +22,9 @@ import matplotlib.pyplot as plt
 import SPNLPpy_syntacticalNodeClass	#required for drawSyntacticalGraphSentence only
 from SPNLPpy_semanticGraphDraw import getEntityNodeColour
 
+syntacticalGraphTypeConstituencyTree = 1
+syntacticalGraphTypeDependencyTree = 2
+
 syntacticalGraph = nx.Graph()
 syntacticalGraphNodeColorMap = []
 drawSyntacticalGraphNodeColours = False
@@ -55,10 +58,11 @@ def displaySyntacticalGraph():
 		nx.draw(syntacticalGraph, pos, with_labels=True)
 	plt.show()
 
-def drawSyntacticalGraphSentence(syntacticalGraphNode, drawGraph=False):	
+def drawSyntacticalGraphSentence(syntacticalGraphNode, syntacticalGraphType, drawGraphNetwork=False):	
 	#parse tree and generate nodes and connections
+	
 	drawNode = True
-	if(drawGraph):
+	if(drawGraphNetwork):
 		sentenceIndex = syntacticalGraphNode.sentenceIndex
 		#print("sentenceIndex = ", sentenceIndex)
 		if(syntacticalGraphNode.drawn):
@@ -67,12 +71,19 @@ def drawSyntacticalGraphSentence(syntacticalGraphNode, drawGraph=False):
 			syntacticalGraphNode.drawn = True
 	else:
 		 sentenceIndex = 0
+		 
 	if(drawNode):
-		drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.treeLevel, sentenceIndex)
-		for sourceNode in syntacticalGraphNode.graphNodeSourceList:
-			drawSyntacticalGraphConnection(syntacticalGraphNode, sourceNode)
-			drawSyntacticalGraphSentence(sourceNode, drawGraph)
-	
+		if(syntacticalGraphType == syntacticalGraphTypeConstituencyTree):
+			drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.constituencyParserTreeLevel, sentenceIndex)
+			for sourceNode in syntacticalGraphNode.graphNodeSourceList:
+				drawSyntacticalGraphConnection(syntacticalGraphNode, sourceNode)
+				drawSyntacticalGraphSentence(sourceNode, syntacticalGraphType, drawGraphNetwork)	
+		elif(syntacticalGraphType == syntacticalGraphTypeDependencyTree):
+			drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.dependencyParserTreeLevel, sentenceIndex)
+			for sourceNode in syntacticalGraphNode.dependencyParserDependentList:
+				drawSyntacticalGraphConnection(syntacticalGraphNode, sourceNode)
+				drawSyntacticalGraphSentence(sourceNode, syntacticalGraphType, drawGraphNetwork)
+					
 def generateSyntacticalGraphNodeName(node):
 	if(drawSyntacticalGraphNodeColours):
 		if(node.graphNodeType == SPNLPpy_syntacticalNodeClass.graphNodeTypeLeaf):
@@ -85,26 +96,35 @@ def generateSyntacticalGraphNodeName(node):
 		nodeName = node.lemma
 	return nodeName
 
-def drawSyntacticalGraphNetwork(headNodeList):	
+def drawSyntacticalGraphNetwork(headNodeList, syntacticalGraphType):	
 	#parse graph and generate nodes and connections
 	for headNode in headNodeList:
 		#print("headNode.lemma = ", headNode.lemma)
-		drawSyntacticalGraphSentence(headNode, drawGraph=True)
+		drawSyntacticalGraphSentence(headNode, syntacticalGraphType, drawGraphNetwork=True)
 	for headNode in headNodeList:
-		drawSyntacticalGraphSentenceReset(headNode)
+		drawSyntacticalGraphSentenceReset(headNode, syntacticalGraphType)
 
-def drawSyntacticalGraphSentenceReset(syntacticalGraphNode):	
+def drawSyntacticalGraphSentenceReset(syntacticalGraphNode, syntacticalGraphType):	
 	if(syntacticalGraphNode.drawn):
 		syntacticalGraphNode.drawn = False
-		for sourceNode in syntacticalGraphNode.graphNodeSourceList:
-			drawSyntacticalGraphSentenceReset(sourceNode)	
+		if(syntacticalGraphType == syntacticalGraphTypeConstituencyTree):
+			for sourceNode in syntacticalGraphNode.graphNodeSourceList:
+				drawSyntacticalGraphSentenceReset(sourceNode, syntacticalGraphType)		
+		elif(syntacticalGraphType == syntacticalGraphTypeDependencyTree):
+			for sourceNode in syntacticalGraphNode.dependencyParserDependentList:
+				drawSyntacticalGraphSentenceReset(sourceNode, syntacticalGraphType)
 
-def drawSyntacticalGraphNodeAndConnections(syntacticalGraphNode, drawGraph=False):	
-	if(drawGraph):
+def drawSyntacticalGraphNodeAndConnections(syntacticalGraphNode, syntacticalGraphType, drawGraphNetwork=False):	
+	if(drawGraphNetwork):
 		sentenceIndex = syntacticalGraphNode.sentenceIndex
 	else:
 		 sentenceIndex = 0
-	drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.treeLevel, sentenceIndex)
-	for sourceNode in syntacticalGraphNode.graphNodeSourceList:
-		drawSyntacticalGraphConnection(syntacticalGraphNode, sourceNode)
-					
+	if(syntacticalGraphType == syntacticalGraphTypeConstituencyTree):
+		drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.constituencyParserTreeLevel, sentenceIndex)
+		for sourceNode in syntacticalGraphNode.graphNodeSourceList:
+			drawSyntacticalGraphConnection(syntacticalGraphNode, sourceNode)
+	elif(syntacticalGraphType == syntacticalGraphTypeDependencyTree):
+		drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.dependencyParserTreeLevel, sentenceIndex)
+		for sourceNode in syntacticalGraphNode.dependencyParserDependentList:
+			drawSyntacticalGraphConnection(syntacticalGraphNode, sourceNode)
+		

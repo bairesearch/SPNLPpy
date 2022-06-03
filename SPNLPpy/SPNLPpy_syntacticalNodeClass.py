@@ -34,7 +34,7 @@ graphNodeSourceIndexFirst = 0	#should only contain 2 elements
 graphNodeSourceIndexSecond = 1	#should only contain 2 elements
 
 class SyntacticalNode:
-	def __init__(self, instanceID, word, lemma, wordVector, posTag, nodeGraphType, activationTime, subgraphSize, conceptWordVector, conceptTime, w, wMin, wMax, treeLevel, sentenceIndex):
+	def __init__(self, instanceID, word, lemma, wordVector, posTag, nodeGraphType, activationTime, constituencyParserSubgraphSize, conceptWordVector, conceptTime, w, wMin, wMax, constituencyParserTreeLevel, sentenceIndex):
 		#primary vars;
 		self.instanceID = instanceID
 		self.word = word
@@ -45,24 +45,29 @@ class SyntacticalNode:
 		self.activationTime = activationTime	#last activation time (used to calculate recency)
 		self.constituencyParserLabel = None	#not used (stored for reference)
 		
-		#sentenceTreeArtificial vars;
-		self.subgraphSize = subgraphSize	#used to normalise wordVector/conceptTime for hidden nodes
-		self.conceptWordVector = conceptWordVector	#requires /subgraphSize
-		self.conceptTime = conceptTime	#requires /subgraphSize
+		#sentenceTreeArtificial vars (for sentence graph only, do not generalise to network graph);
+		self.constituencyParserSubgraphSize = constituencyParserSubgraphSize	#for constituencyParser	#used to normalise wordVector/conceptTime for hidden nodes
+		self.conceptWordVector = conceptWordVector	#requires /constituencyParserSubgraphSize
+		self.conceptTime = conceptTime	#requires /constituencyParserSubgraphSize
 		self.w = w #temporary sentence word index (used for reference resolution only)
 		self.wMin = wMin	#temporary sentence word index (used for reference resolution only) - min of all hidden nodes
 		self.wMax = wMax	#temporary sentence word index (used for reference resolution only) - max of all hidden nodes
-		self.treeLevel = treeLevel
+		self.constituencyParserTreeLevel = constituencyParserTreeLevel	#for constituencyParser
 		self.sentenceIndex = sentenceIndex
 		#self.referenceSentence = False	#temporary flag: node has been reference by current sentence (used for reference resolution only)
-		
+		self.dependencyParserTreeLevel = 0	#for dependencyParser
+		self.isPrimarySourceNode = False #temporary for SPNLPpy_syntacticalGraphConstituencyParserWordVectors only
+		self.primaryLeafNode = None	#temporary for SPNLPpy_syntacticalGraphConstituencyParserWordVectors only
+				
 		#connection vars;
-		self.graphNodeTargetList = []	#should only contain one element
-		self.graphNodeSourceList = []
+		self.graphNodeTargetList = []	#for constituencyParser	#should only contain one element
+		self.graphNodeSourceList = []	#for constituencyParse
 		#self.graphNodeTargetDict = {}	#dict indexed by lemma, every entry is a dictionary of SyntacticalNode instances indexed by instanceID 	#for optimised lookup by concept
 		#self.graphNodeSourceDict = {}	#dict indexed by lemma, every entry is a dictionary of SyntacticalNode instances indexed by instanceID	#for optimised lookup by concept
 		#self.foundRecentIndex = False	#temporary var (indicates referencing a previously declared instance in the article)
 		self.sourceNodePosition = sourceNodePositionUnknown	#for leaf nodes only 
+		self.dependencyParserGovernorList = []	#for dependencyParser	#should only contain one element
+		self.dependencyParserDependentList = []	#for dependencyParser
 		
 		#intermediary vars for semantic graph generation;
 		self.entityType = -1	#temp #GIA_ENTITY_TYPE_UNDEFINED

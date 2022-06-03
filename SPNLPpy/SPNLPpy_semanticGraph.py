@@ -24,7 +24,6 @@ import numpy as np
 import spacy
 from SPNLPpy_semanticNodeClass import *
 from SPNLPpy_syntacticalNodeClass import *
-import SPNLPpy_semanticGraphIntermediaryTransformation
 
 supportMultiwordVerbsPrepositions = True
 
@@ -35,42 +34,54 @@ drawSemanticGraphNetwork = False
 if(drawSemanticGraphNetwork):
 	import SPNLPpy_semanticGraphDraw as SPNLPpy_semanticGraphDrawNetwork
 
+performReferenceResolution = True
 
-def initialiseSemanticGraph():
-	pass
+semanticGraphNodeDictionary = {}
+
+#def initialiseSemanticGraph():
+#	pass
 	
-def finaliseSemanticGraph():
-	if(drawSemanticGraphNetwork):
-		SPNLPpy_semanticGraphDrawNetwork.displaySemanticGraph()
+#def finaliseSemanticGraph():
+#	if(drawSemanticGraphNetwork):
+#		SPNLPpy_semanticGraphDrawNetwork.displaySemanticGraph()
 		
-def generateSemanticGraphNetwork(articles, performIntermediarySemanticTransformation):
+def generateSemanticGraphNetwork(articles):
 
 	for sentenceIndex, sentence in enumerate(articles):
-		generateSyntacticalGraphSentenceString(sentenceIndex, sentence, performIntermediarySemanticTransformation)		
+		generateSyntacticalGraphSentenceString(sentenceIndex, sentence)		
 
 	if(drawSyntacticalGraphNetwork):
 		SPNLPpy_syntacticalGraphDrawNetwork.displaySyntacticalGraph()
 		
 						
-def generateSemanticGraph(sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList, syntacticalGraphHeadNode, performIntermediarySemanticTransformation):
-
-	if(performIntermediarySemanticTransformation):
-		SPNLPpy_semanticGraphIntermediaryTransformation.performIntermediarySemanticTransformation(sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList, syntacticalGraphHeadNode)
+def generateSemanticGraphSentence(sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList, syntacticalGraphHeadNode, generateSemanticGraphNetwork):
 
 	if(drawSemanticGraphSentence):
-		SPNLPpy_semanticGraphDraw.clearSemanticGraph()
-	
+		SPNLPpy_semanticGraphDrawSentence.clearSemanticGraph()
+	if(generateSemanticGraphNetwork):
+		if(drawSemanticGraphNetwork):
+			SPNLPpy_semanticGraphDrawNetwork.clearSemanticGraph()	
+			
 	sentenceSemanticNodeList = []
 	generateSemanticNodes(sentenceSemanticNodeList, sentenceSyntacticalLeafNodeList)		
-	#convertToSemanticGraph(sentenceSemanticNodeList, sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList)	#TODO
+	#convertToSemanticGraph(sentenceSemanticNodeList, sentenceSyntacticalLeafNodeList, sentenceSyntacticalTreeNodeList, syntacticalGraphHeadNode)	#TODO
 
 	if(drawSemanticGraphSentence):
-		SPNLPpy_semanticGraphDraw.displaySemanticGraph()
+		SPNLPpy_semanticGraphDrawSentence.displaySemanticGraph()
+	
+	if(generateSemanticGraphNetwork):
+		if(performReferenceResolution):
+			#peform reference resolution after building syntactical tree (any instance of successful reference identification will insert syntactical tree into syntactical graph/network)
+			identifyBranchReferences(sentenceSemanticNodeList, graphSemanticNodeList)
 
-
+		if(drawSemanticGraphNetwork):
+			SPNLPpy_semanticGraphDrawNetwork.drawSemanticGraphNetwork(headNodeList)
+			print("SPNLPpy_semanticGraphDrawNetwork.displaySyntacticalGraph()")
+			SPNLPpy_semanticGraphDrawNetwork.displaySemanticGraph()
+			
 def generateSemanticNodes(sentenceSemanticNodeList, sentenceSyntacticalLeafNodeList):
 	for syntacticalNode in sentenceSyntacticalLeafNodeList:
-		#assume syntacticalNode.entityType already generated via performIntermediarySemanticTransformation
+		#assume syntacticalNode.entityType already generated via performIntermediarySyntacticalTransformation
 		entityName = syntacticalNode.lemma 
 		semanticNode = SemanticNode(syntacticalNode.instanceID, entityName, syntacticalNode.word, syntacticalNode.wordVector, syntacticalNode.entityType)
 		sentenceSemanticNodeList.append(semanticNode)
