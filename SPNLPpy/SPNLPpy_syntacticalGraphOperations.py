@@ -106,8 +106,8 @@ def createGraphConnection(hiddenNode, node1, node2, addToConnectionsDictionary):
 	addConnectionToNodeTargets(node2, hiddenNode)
 	addConnectionToNodeSources(hiddenNode, node1)
 	addConnectionToNodeSources(hiddenNode, node2)
-	node1.sourceNodePosition = sourceNodePositionFirst
-	node2.sourceNodePosition = sourceNodePositionSecond
+	node1.CPsourceNodePosition = sourceNodePositionFirst
+	node2.CPsourceNodePosition = sourceNodePositionSecond
 
 	#if(addToConnectionsDictionary):
 	#	graphConnectionKey = createGraphConnectionKey(hiddenNode, node1, node2)
@@ -147,67 +147,67 @@ def calculateProximityConnection(w, w2):
 #frequency:
 
 #frequency reference:
-def calculateFrequencyReference(sentenceTreeNodeList, node1, node2):
+def calculateFrequencyReference(CPsentenceTreeNodeList, node1, node2):
 	#CHECKTHIS: requires calibration
 	#CHECKTHIS; note compares node subgraph source components (not target components)
-	frequency = compareNodeReferenceSimilarity(sentenceTreeNodeList, node1, node2)	 #CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
+	frequency = compareNodeReferenceSimilarity(CPsentenceTreeNodeList, node1, node2)	 #CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
 	return frequency
 
-def compareNodeReferenceSimilarity(sentenceTreeNodeList, node1, node2):
+def compareNodeReferenceSimilarity(CPsentenceTreeNodeList, node1, node2):
 	if(calculateReferenceFrequencyUsingWordVectorSimilarity):
-		similarity = compareNodeWordVectorsSimilarity(sentenceTreeNodeList, node1, node2, calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic)		#compareNodeCorpusAssociationFrequency
+		similarity = compareNodeWordVectorsSimilarity(CPsentenceTreeNodeList, node1, node2, calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic)		#compareNodeCorpusAssociationFrequency
 	else:
-		similarity = compareNodeIdenticalConceptSimilarity(sentenceTreeNodeList, node1, node2, calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic)
+		similarity = compareNodeIdenticalConceptSimilarity(CPsentenceTreeNodeList, node1, node2, calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic)
 	return similarity
 	
 #frequency connection:
-def calculateFrequencyConnection(sentenceTreeNodeList, node1, node2):
+def calculateFrequencyConnection(CPsentenceTreeNodeList, node1, node2):
 	#CHECKTHIS: requires calibration
 	#CHECKTHIS; note compares node subgraph source components (not target components)
-	frequency = compareNodeConnectionSimilarity(sentenceTreeNodeList, node1, node2)	 #CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
+	frequency = compareNodeConnectionSimilarity(CPsentenceTreeNodeList, node1, node2)	 #CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
 	return frequency
 
-def compareNodeConnectionSimilarity(sentenceTreeNodeList, node1, node2):
+def compareNodeConnectionSimilarity(CPsentenceTreeNodeList, node1, node2):
 	if(calculateConnectionFrequencyUsingWordVectorSimilarity):
-		similarity = compareNodeWordVectorsSimilarity(sentenceTreeNodeList, node1, node2, calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic)		#compareNodeCorpusAssociationFrequency
+		similarity = compareNodeWordVectorsSimilarity(CPsentenceTreeNodeList, node1, node2, calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic)		#compareNodeCorpusAssociationFrequency
 	else:
 		print("compareNodeConnectionSimilarity currently requires calculateConnectionFrequencyUsingWordVectorSimilarity - no alternate method coded")
 		exit()
 	return similarity
 
 #frequency metric 1 (word vector similarity):
-def compareNodeWordVectorsSimilarity(sentenceTreeNodeList, node1, node2, nodeSentenceSubgraphsDynamic):
-	wordVectorDiff = compareNodeWordVectors(sentenceTreeNodeList, node1, node2, nodeSentenceSubgraphsDynamic)
+def compareNodeWordVectorsSimilarity(CPsentenceTreeNodeList, node1, node2, nodeSentenceSubgraphsDynamic):
+	wordVectorDiff = compareNodeWordVectors(CPsentenceTreeNodeList, node1, node2, nodeSentenceSubgraphsDynamic)
 	#print("compareNodeWordVectorsSimilarity: node1.lemma = ", node1.lemma, ", node2.lemma = ", node2.lemma, ", wordVectorDiff = ", wordVectorDiff)
 	similarity = calculateWordVectorSimilarity(wordVectorDiff)
 	return similarity
 	
-def compareNodeWordVectors(sentenceTreeNodeList, node1, node2, nodeSentenceSubgraphsDynamic):
+def compareNodeWordVectors(CPsentenceTreeNodeList, node1, node2, nodeSentenceSubgraphsDynamic):
 	if(nodeSentenceSubgraphsDynamic):
-		subgraphArtificalWordVector1 = calculateSubgraphArtificialWordVector(sentenceTreeNodeList, node1)
-		subgraphArtificalWordVector2 = calculateSubgraphArtificialWordVector(sentenceTreeNodeList, node2)
+		subgraphArtificalWordVector1 = calculateSubgraphArtificialWordVector(CPsentenceTreeNodeList, node1)
+		subgraphArtificalWordVector2 = calculateSubgraphArtificialWordVector(CPsentenceTreeNodeList, node2)
 	else:
 		subgraphArtificalWordVector1 = getBranchWordVector(node1)
 		subgraphArtificalWordVector2 = getBranchWordVector(node2)
 	wordVectorDiff = compareWordVectors(subgraphArtificalWordVector1, subgraphArtificalWordVector2)		
 	return wordVectorDiff
 	
-def calculateSubgraphArtificialWordVector(sentenceTreeNodeList, node):
+def calculateSubgraphArtificialWordVector(CPsentenceTreeNodeList, node):
 	subgraphArtificalWordVector = np.zeros(shape=ANNtf2_loadDataset.wordVectorLibraryNumDimensions)
-	subgraphArtificalWordVector, constituencyParserSubgraphSize = calculateSubgraphArtificialWordVectorRecurse(sentenceTreeNodeList, node, subgraphArtificalWordVector, 0)	
-	subgraphArtificalWordVector = np.divide(subgraphArtificalWordVector, float(constituencyParserSubgraphSize))
+	subgraphArtificalWordVector, CPsubgraphSize = calculateSubgraphArtificialWordVectorRecurse(CPsentenceTreeNodeList, node, subgraphArtificalWordVector, 0)	
+	subgraphArtificalWordVector = np.divide(subgraphArtificalWordVector, float(CPsubgraphSize))
 	return subgraphArtificalWordVector
 
-def calculateSubgraphArtificialWordVectorRecurse(sentenceTreeNodeList, node, subgraphArtificalWordVector, constituencyParserSubgraphSize):
+def calculateSubgraphArtificialWordVectorRecurse(CPsentenceTreeNodeList, node, subgraphArtificalWordVector, CPsubgraphSize):
 	#CHECKTHIS: requires update - currently uses rudimentary combined word vector similarity comparison
 	if(node.graphNodeType == graphNodeTypeLeaf):
 		subgraphArtificalWordVector = np.add(subgraphArtificalWordVector, node.wordVector)
 		#print("subgraphArtificalWordVector = ", np.mean(np.abs(subgraphArtificalWordVector)))
-		constituencyParserSubgraphSize = constituencyParserSubgraphSize + 1
-	for subgraphNode in node.graphNodeSourceList:	
-		#if(subgraphNode in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
-		subgraphArtificalWordVector, constituencyParserSubgraphSize = calculateSubgraphArtificialWordVectorRecurse(sentenceTreeNodeList, subgraphNode, subgraphArtificalWordVector, constituencyParserSubgraphSize)
-	return subgraphArtificalWordVector, constituencyParserSubgraphSize
+		CPsubgraphSize = CPsubgraphSize + 1
+	for subgraphNode in node.CPgraphNodeSourceList:	
+		#if(subgraphNode in CPsentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
+		subgraphArtificalWordVector, CPsubgraphSize = calculateSubgraphArtificialWordVectorRecurse(CPsentenceTreeNodeList, subgraphNode, subgraphArtificalWordVector, CPsubgraphSize)
+	return subgraphArtificalWordVector, CPsubgraphSize
 	
 def calculateWordVectorSimilarity(wordVectorDiff):
 	similarity = 1.0 - wordVectorDiff
@@ -222,7 +222,7 @@ def compareWordVectors(wordVector1, wordVector2):
 
 def getBranchWordVectorFromSourceNodes(connectionNode1, connectionNode2):
 	if(calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate):
-		wordVector = np.divide(np.add(connectionNode1.conceptWordVector, connectionNode2.conceptWordVector), (connectionNode1.constituencyParserSubgraphSize + connectionNode2.constituencyParserSubgraphSize))
+		wordVector = np.divide(np.add(connectionNode1.conceptWordVector, connectionNode2.conceptWordVector), (connectionNode1.CPsubgraphSize + connectionNode2.CPsubgraphSize))
 	else:
 		wordVector = np.divide(np.add(connectionNode1.wordVector, connectionNode2.wordVector), 2.0)
 	return wordVector
@@ -237,46 +237,46 @@ def getBranchWordVectorFromSourceNodesSum(wordVectorConnectionNodeSum, conceptWo
 	
 def getBranchWordVector(node1):
 	if(calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate):
-		wordVector = np.divide(node1.conceptWordVector, node1.constituencyParserSubgraphSize)
+		wordVector = np.divide(node1.conceptWordVector, node1.CPsubgraphSize)
 	else:
 		wordVector = np.divide(node1.wordVector)
 	return wordVector
 
 #frequency metric 2 (identical concept similarity):
-def compareNodeIdenticalConceptSimilarity(sentenceTreeNodeList, node1, node2, nodeSentenceSubgraphsDynamic):
+def compareNodeIdenticalConceptSimilarity(CPsentenceTreeNodeList, node1, node2, nodeSentenceSubgraphsDynamic):
 	if(nodeSentenceSubgraphsDynamic):
-		similarity = calculateSubgraphNumberIdenticalConcepts(sentenceTreeNodeList, node1, node2)			
+		similarity = calculateSubgraphNumberIdenticalConcepts(CPsentenceTreeNodeList, node1, node2)			
 	else:
 		print("compareNodeIdenticalConceptSimilarity currently requires nodeSentenceSubgraphsDynamic - no alternate method coded")
 		exit()
 	return similarity
 
-def calculateSubgraphNumberIdenticalConcepts(sentenceTreeNodeList, node1, nodeToCompare):
-	numberOfIdenticalConcepts, constituencyParserSubgraphSize = calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, node1, nodeToCompare, 0, 0)
-	similarity = numberOfIdenticalConcepts/constituencyParserSubgraphSize
+def calculateSubgraphNumberIdenticalConcepts(CPsentenceTreeNodeList, node1, nodeToCompare):
+	numberOfIdenticalConcepts, CPsubgraphSize = calculateSubgraphNumberIdenticalConcepts1(CPsentenceTreeNodeList, node1, nodeToCompare, 0, 0)
+	similarity = numberOfIdenticalConcepts/CPsubgraphSize
 	return similarity
 	
 #compares all nodes in node1 subgraph (to nodeToCompare subgraphs)
 #recurse node1 subgraph
-def calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, node1, nodeToCompare, numberOfIdenticalConcepts1, constituencyParserSubgraphSize):
+def calculateSubgraphNumberIdenticalConcepts1(CPsentenceTreeNodeList, node1, nodeToCompare, numberOfIdenticalConcepts1, CPsubgraphSize):
 	#TODO: verify calculate source to target connections only
-	numberOfIdenticalConcepts2 = calculateSubgraphNumberIdenticalConcepts2(sentenceTreeNodeList, node1, nodeToCompare, 0)
+	numberOfIdenticalConcepts2 = calculateSubgraphNumberIdenticalConcepts2(CPsentenceTreeNodeList, node1, nodeToCompare, 0)
 	numberOfIdenticalConcepts1 += numberOfIdenticalConcepts2
-	constituencyParserSubgraphSize = constituencyParserSubgraphSize + 1
-	for subgraphNode1 in node1.graphNodeSourceList:	
-		if(subgraphNode1 in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
-			numberOfIdenticalConcepts1, constituencyParserSubgraphSize = calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, subgraphNode1, nodeToCompare, numberOfIdenticalConcepts1, constituencyParserSubgraphSize)
-	return numberOfIdenticalConcepts1, constituencyParserSubgraphSize
+	CPsubgraphSize = CPsubgraphSize + 1
+	for subgraphNode1 in node1.CPgraphNodeSourceList:	
+		if(subgraphNode1 in CPsentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
+			numberOfIdenticalConcepts1, CPsubgraphSize = calculateSubgraphNumberIdenticalConcepts1(CPsentenceTreeNodeList, subgraphNode1, nodeToCompare, numberOfIdenticalConcepts1, CPsubgraphSize)
+	return numberOfIdenticalConcepts1, CPsubgraphSize
 
 #compares node1 with all nodes in node2 subgraph
 #recurse node2 subgraph
-def calculateSubgraphNumberIdenticalConcepts2(sentenceTreeNodeList, node1, node2, numberOfIdenticalConcepts):
+def calculateSubgraphNumberIdenticalConcepts2(CPsentenceTreeNodeList, node1, node2, numberOfIdenticalConcepts):
 	#TODO: verify calculate source to target connections only
 	if(node1.lemma == node2.lemma):
 		numberOfIdenticalConcepts += 1
-	for subgraphNode2 in node2.graphNodeSourceList:	
-		if(subgraphNode2 not in sentenceTreeNodeList):	#verify subgraph instance was not referenced in current sentence
-			numberOfIdenticalConcepts = calculateSubgraphNumberIdenticalConcepts2(sentenceTreeNodeList, node1, subgraphNode2, numberOfIdenticalConcepts)
+	for subgraphNode2 in node2.CPgraphNodeSourceList:	
+		if(subgraphNode2 not in CPsentenceTreeNodeList):	#verify subgraph instance was not referenced in current sentence
+			numberOfIdenticalConcepts = calculateSubgraphNumberIdenticalConcepts2(CPsentenceTreeNodeList, node1, subgraphNode2, numberOfIdenticalConcepts)
 	return numberOfIdenticalConcepts
 
 
@@ -284,53 +284,53 @@ def calculateSubgraphNumberIdenticalConcepts2(sentenceTreeNodeList, node1, node2
 #recency:
 
 #recency reference:	
-def calculateRecencyReference(sentenceTreeNodeList, node1, node2, currentTime):
+def calculateRecencyReference(CPsentenceTreeNodeList, node1, node2, currentTime):
 	#calculates recency based on concept last access time - no alternate method coded
-	recency = compareNodeConceptTimeSimilarity(sentenceTreeNodeList, node1, node2, currentTime, calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamic)
+	recency = compareNodeConceptTimeSimilarity(CPsentenceTreeNodeList, node1, node2, currentTime, calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamic)
 	return recency
 	
 #recency connection:
-def calculateRecencyConnection(sentenceTreeNodeList, node1, node2, currentTime):
+def calculateRecencyConnection(CPsentenceTreeNodeList, node1, node2, currentTime):
 	#calculates recency based on concept last access time - no alternate method coded
-	recency = compareNodeConceptTimeSimilarity(sentenceTreeNodeList, node1, node2, currentTime, calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic)
+	recency = compareNodeConceptTimeSimilarity(CPsentenceTreeNodeList, node1, node2, currentTime, calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic)
 	return recency
 	
 #recency metric:	
-def compareNodeConceptTimeSimilarity(sentenceTreeNodeList, node1, node2, currentTime, nodeSentenceSubgraphsDynamic):
-	timeDiff = compareNodeConceptTime(sentenceTreeNodeList, node1, node2, currentTime, nodeSentenceSubgraphsDynamic)
+def compareNodeConceptTimeSimilarity(CPsentenceTreeNodeList, node1, node2, currentTime, nodeSentenceSubgraphsDynamic):
+	timeDiff = compareNodeConceptTime(CPsentenceTreeNodeList, node1, node2, currentTime, nodeSentenceSubgraphsDynamic)
 	recencySimilarity = calculateRecency(timeDiff)
 	return recencySimilarity
 	
-def compareNodeConceptTime(sentenceTreeNodeList, node1, node2, currentTime, nodeSentenceSubgraphsDynamic):
+def compareNodeConceptTime(CPsentenceTreeNodeList, node1, node2, currentTime, nodeSentenceSubgraphsDynamic):
 	#CHECKTHIS: requires calibration
 	#CHECKTHIS: requires update - currently uses rudimentary combined minTimeDiff similarity comparison
 	if(nodeSentenceSubgraphsDynamic):
-		subgraphArtificalTime1 = calculateSubgraphArtificialTime(sentenceTreeNodeList, node1)
-		subgraphArtificalTime2 = calculateSubgraphArtificialTime(sentenceTreeNodeList, node2)
+		subgraphArtificalTime1 = calculateSubgraphArtificialTime(CPsentenceTreeNodeList, node1)
+		subgraphArtificalTime2 = calculateSubgraphArtificialTime(CPsentenceTreeNodeList, node2)
 	else:
 		subgraphArtificalTime1 = getBranchConceptTime(node1)
 		subgraphArtificalTime2 = getBranchConceptTime(node2)
 	timeDiff = compareTime(subgraphArtificalTime1, subgraphArtificalTime2)
 	return timeDiff
 	
-def calculateSubgraphArtificialTime(sentenceTreeNodeList, node):
+def calculateSubgraphArtificialTime(CPsentenceTreeNodeList, node):
 	subgraphArtificalTime = 0
-	subgraphArtificalTime, constituencyParserSubgraphSize = calculateSubgraphArtificialTimeRecurse(sentenceTreeNodeList, node, subgraphArtificalTime, 0)
-	subgraphArtificalTime = (subgraphArtificalTime / constituencyParserSubgraphSize)
+	subgraphArtificalTime, CPsubgraphSize = calculateSubgraphArtificialTimeRecurse(CPsentenceTreeNodeList, node, subgraphArtificalTime, 0)
+	subgraphArtificalTime = (subgraphArtificalTime / CPsubgraphSize)
 	return subgraphArtificalTime
 
-def calculateSubgraphArtificialTimeRecurse(sentenceTreeNodeList, node, subgraphArtificalTime, constituencyParserSubgraphSize):
+def calculateSubgraphArtificialTimeRecurse(CPsentenceTreeNodeList, node, subgraphArtificalTime, CPsubgraphSize):
 	if(node.graphNodeType == graphNodeTypeLeaf):
 		subgraphArtificalTime = subgraphArtificalTime + node.conceptTime
-		constituencyParserSubgraphSize = constituencyParserSubgraphSize + 1
-	for subgraphNode in node.graphNodeSourceList:	
-		#if(subgraphNode in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
-		subgraphArtificalTime, constituencyParserSubgraphSize = calculateSubgraphArtificialTimeRecurse(sentenceTreeNodeList, subgraphNode, subgraphArtificalTime, constituencyParserSubgraphSize)
-	return subgraphArtificalTime, constituencyParserSubgraphSize
+		CPsubgraphSize = CPsubgraphSize + 1
+	for subgraphNode in node.CPgraphNodeSourceList:	
+		#if(subgraphNode in CPsentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
+		subgraphArtificalTime, CPsubgraphSize = calculateSubgraphArtificialTimeRecurse(CPsentenceTreeNodeList, subgraphNode, subgraphArtificalTime, CPsubgraphSize)
+	return subgraphArtificalTime, CPsubgraphSize
 
 def getBranchConceptTime(node1):
 	if(calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulate):
-		conceptTime = node1.conceptTime/node1.constituencyParserSubgraphSize
+		conceptTime = node1.conceptTime/node1.CPsubgraphSize
 	else:
 		conceptTime = node1.activationTime	#conceptTime
 	return conceptTime
@@ -339,22 +339,22 @@ def compareTime(time1, time2):
 	timeDiff = abs(time1 - time2)
 	return timeDiff
 	
-#def calculateSubgraphMostRecentIdenticalConnection(sentenceTreeNodeList, node1, nodeToCompare, numberOfConnections1):
+#def calculateSubgraphMostRecentIdenticalConnection(CPsentenceTreeNodeList, node1, nodeToCompare, numberOfConnections1):
 #	#TODO: verify calculate source to target connections only
-#	numberOfConnections2 = calculateSubgraphNumberIdenticalConcepts2(sentenceTreeNodeList, node1, nodeToCompare, 0)
+#	numberOfConnections2 = calculateSubgraphNumberIdenticalConcepts2(CPsentenceTreeNodeList, node1, nodeToCompare, 0)
 #	numberOfConnections1 += numberOfConnections2
-#	for subgraphNode1 in node1.graphNodeSourceList:	
-#		#if(subgraphNode1 in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
-#		numberOfConnections1 = calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, subgraphNode1, nodeToCompare, numberOfConnections1)
+#	for subgraphNode1 in node1.CPgraphNodeSourceList:	
+#		#if(subgraphNode1 in CPsentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
+#		numberOfConnections1 = calculateSubgraphNumberIdenticalConcepts1(CPsentenceTreeNodeList, subgraphNode1, nodeToCompare, numberOfConnections1)
 #	return numberOfConnections1	
 
-def calculateConceptTimeLeafNode(syntacticalGraphNodeDictionary, sentenceTreeNodeList, lemma, currentTime):
-	foundMostRecentInstanceNode, mostRecentInstanceNode, mostRecentInstanceTimeDiff = findMostRecentInstance(syntacticalGraphNodeDictionary, sentenceTreeNodeList, lemma, currentTime)
+def calculateConceptTimeLeafNode(syntacticalGraphNodeDictionary, CPsentenceTreeNodeList, lemma, currentTime):
+	foundMostRecentInstanceNode, mostRecentInstanceNode, mostRecentInstanceTimeDiff = findMostRecentInstance(syntacticalGraphNodeDictionary, CPsentenceTreeNodeList, lemma, currentTime)
 	if(not mostRecentInstanceNode):
 		mostRecentInstanceTimeDiff = maxTimeDiff
 	return mostRecentInstanceTimeDiff
 	
-def findMostRecentInstance(syntacticalGraphNodeDictionary, sentenceTreeNodeList, lemma, currentTime):	
+def findMostRecentInstance(syntacticalGraphNodeDictionary, CPsentenceTreeNodeList, lemma, currentTime):	
 	#print("findMostRecentInstance") 
 	#calculates recency of most recent instance, and returns this instance
 	foundMostRecentInstanceNode = False
@@ -365,7 +365,7 @@ def findMostRecentInstance(syntacticalGraphNodeDictionary, sentenceTreeNodeList,
 		minTimeDiff = maxTimeDiff
 		mostRecentInstanceNode = None
 		for instanceID2, node2 in instanceDict2.items():
-			if(node2.activationTime != currentTime):	#ignore instances that were added from same sentence	#OR: node2 is not in(sentenceTreeNodeList)
+			if(node2.activationTime != currentTime):	#ignore instances that were added from same sentence	#OR: node2 is not in(CPsentenceTreeNodeList)
 				timeDiff = calculateTimeDiffAbsolute(node2.activationTime, currentTime)
 				#print("timeDiff = ", timeDiff)
 				if(timeDiff < minTimeDiff):
@@ -405,16 +405,16 @@ def compareNodeLastActivationTime(node1, node2):
 
 #referencing:
 
-def identifyBranchReferences(syntacticalGraphNodeDictionary, sentenceTreeNodeList, branchHeadNode, currentTime):
-	for subgraphNode1 in branchHeadNode.graphNodeSourceList:	
-		#if(subgraphNode1 in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence (should always be true)
-		branchReferenceFound, branchReference, _ = identifyBranchReference(syntacticalGraphNodeDictionary, sentenceTreeNodeList, subgraphNode1, currentTime)
+def identifyBranchReferences(syntacticalGraphNodeDictionary, CPsentenceTreeNodeList, branchHeadNode, currentTime):
+	for subgraphNode1 in branchHeadNode.CPgraphNodeSourceList:	
+		#if(subgraphNode1 in CPsentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence (should always be true)
+		branchReferenceFound, branchReference, _ = identifyBranchReference(syntacticalGraphNodeDictionary, CPsentenceTreeNodeList, subgraphNode1, currentTime)
 		if(branchReferenceFound):
 			replaceBranch(syntacticalGraphNodeDictionary, branchHeadNode, subgraphNode1, branchReference)
 		else:
-			identifyBranchReferences(syntacticalGraphNodeDictionary, sentenceTreeNodeList, subgraphNode1, currentTime)
+			identifyBranchReferences(syntacticalGraphNodeDictionary, CPsentenceTreeNodeList, subgraphNode1, currentTime)
 
-def identifyBranchReference(syntacticalGraphNodeDictionary, sentenceTreeNodeList, subgraphNode1, currentTime):
+def identifyBranchReference(syntacticalGraphNodeDictionary, CPsentenceTreeNodeList, subgraphNode1, currentTime):
 	#CHECKTHIS: current optimisation/lookup limitations;
 		#subgraphNode1.lemma must match referenceNode.lemma
 		#subgraphNode1 branch structure must match referenceNode branch structure
@@ -428,9 +428,9 @@ def identifyBranchReference(syntacticalGraphNodeDictionary, sentenceTreeNodeList
 		node1ConceptInstances = syntacticalGraphNodeDictionary[subgraphNode1.lemma]	#current limitation: only reference identical lemmas [future allow referencing based on word vector similarity]
 		for instanceID1, instanceNode1 in node1ConceptInstances.items():
 			#print("\tinstanceNode1.activationTime = ", instanceNode1.activationTime)
-			if(instanceNode1.activationTime != currentTime):	#ignore instances that were added from same sentence	#OR: instanceNode1 is not in(sentenceTreeNodeList)
-				frequency = calculateFrequencyReference(sentenceTreeNodeList, subgraphNode1, instanceNode1)
-				recency = calculateRecencyReference(sentenceTreeNodeList, subgraphNode1, instanceNode1, currentTime)
+			if(instanceNode1.activationTime != currentTime):	#ignore instances that were added from same sentence	#OR: instanceNode1 is not in(CPsentenceTreeNodeList)
+				frequency = calculateFrequencyReference(CPsentenceTreeNodeList, subgraphNode1, instanceNode1)
+				recency = calculateRecencyReference(CPsentenceTreeNodeList, subgraphNode1, instanceNode1, currentTime)
 				referenceMetric = calculateMetricReference(frequency, recency)
 				#print("identifyBranchReference:")
 				#print("\tfrequency = ", frequency)
@@ -450,17 +450,17 @@ def identifyBranchReference(syntacticalGraphNodeDictionary, sentenceTreeNodeList
 #replace local branch with referenced graph branch
 def replaceBranch(syntacticalGraphNodeDictionary, branchHeadNode, subgraphNode1, branchReference):
 
-	branchHeadNode.graphNodeSourceList.remove(subgraphNode1)
-	branchHeadNode.graphNodeSourceList.append(branchReference)
-	branchReference.graphNodeTargetList.append(branchHeadNode)
+	branchHeadNode.CPgraphNodeSourceList.remove(subgraphNode1)
+	branchHeadNode.CPgraphNodeSourceList.append(branchReference)
+	branchReference.CPgraphNodeTargetList.append(branchHeadNode)
 		
-	#subgraphNode1.graphNodeTargetList.clear()	#not necessary	
+	#subgraphNode1.CPgraphNodeTargetList.clear()	#not necessary	
 	deleteBranch(syntacticalGraphNodeDictionary, subgraphNode1)
 
 #delete local branch (without references)
 def deleteBranch(syntacticalGraphNodeDictionary, branchHeadNode):
-	for subgraphNode1 in branchHeadNode.graphNodeSourceList:	
-		#if(subgraphNode1 in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence (should always be true)
+	for subgraphNode1 in branchHeadNode.CPgraphNodeSourceList:	
+		#if(subgraphNode1 in CPsentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence (should always be true)
 		removeNodeFromGraph(syntacticalGraphNodeDictionary, subgraphNode1)
 		deleteBranch(syntacticalGraphNodeDictionary, subgraphNode1)
 		del subgraphNode1

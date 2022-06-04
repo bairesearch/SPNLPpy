@@ -13,7 +13,7 @@ see SPNLPpy_main.py
 see SPNLPpy_main.py
 
 # Description:
-SPNLP Syntactical Graph Dependency Parser Formal - external python syntactical dependency relation identification
+SPNLP Syntactical Graph Dependency Parser (DP) Formal - external python dependency parse tree generation
 
 Preconditions: assumes leaf nodes already generated
 
@@ -25,7 +25,7 @@ from SPNLPpy_syntacticalNodeClass import *
 
 dependencyTreeRootNodeName = "ROOT"
 
-def generateSyntacticalTreeDependencyParserFormal(sentenceIndex, tokenisedSentence, sentenceLeafNodeList, sentenceTreeNodeList, syntacticalGraphNodeDictionary):
+def generateSyntacticalTreeDependencyParserFormal(sentenceIndex, tokenisedSentence, sentenceLeafNodeList, CPsentenceTreeNodeList, syntacticalGraphNodeDictionary):
 
 	graphHeadNode = None
 	
@@ -37,13 +37,16 @@ def generateSyntacticalTreeDependencyParserFormal(sentenceIndex, tokenisedSenten
 		#print("w = ", w)
 		#print("token.i = ", tokenDependent.i)
 		leafNodeDependent = sentenceLeafNodeList[tokenDependent.i]
+		dependencyRelationLabel = tokenDependent.dep_
 		if(tokenDependent.dep_ == dependencyTreeRootNodeName):
 			graphHeadNode = leafNodeDependent
 		else:
 			tokenGovernor = tokenDependent.head
 			leafNodeGovernor = sentenceLeafNodeList[tokenGovernor.i]
-			leafNodeDependent.dependencyParserGovernorList.append(leafNodeGovernor)
-			leafNodeGovernor.dependencyParserDependentList.append(leafNodeDependent)
+			leafNodeDependent.DPgovernorList.append(leafNodeGovernor)
+			leafNodeGovernor.DPdependentList.append(leafNodeDependent)
+			leafNodeDependent.DPdependencyRelationLabelList.append(dependencyRelationLabel)
+
 	
 	if(graphHeadNode is None):
 		print("generateSyntacticalDependencyRelations error: graphHeadNode (ROOT) not found")
@@ -56,13 +59,13 @@ def generateSyntacticalTreeDependencyParserFormal(sentenceIndex, tokenisedSenten
 def calculateNodeTreeLevelSentence(syntacticalGraphNode):	
 	treeLevel = calculateNodeTreeLevel(syntacticalGraphNode, 0)
 	#print("treeLevel = ", treeLevel)
-	syntacticalGraphNode.dependencyParserTreeLevel = treeLevel
-	for sourceNode in syntacticalGraphNode.dependencyParserDependentList:
+	syntacticalGraphNode.DPtreeLevel = treeLevel
+	for sourceNode in syntacticalGraphNode.DPdependentList:
 		calculateNodeTreeLevelSentence(sourceNode)
 
 def calculateNodeTreeLevel(syntacticalGraphNode, treeLevel):	
 	maxTreeLevelBranch = treeLevel
-	for sourceNode in syntacticalGraphNode.dependencyParserDependentList:
+	for sourceNode in syntacticalGraphNode.DPdependentList:
 		treeLevelTemp = calculateNodeTreeLevel(sourceNode, treeLevel+1)
 		if(treeLevelTemp > maxTreeLevelBranch):
 			maxTreeLevelBranch = treeLevelTemp

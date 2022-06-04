@@ -13,8 +13,8 @@ see SPNLPpy_main.py
 see SPNLPpy_main.py
 
 # Description:
-SPNLP Syntactical Graph Dependency Parser Word Vectors - identify syntactical graph dependency relation governor/dependents using input vectors
-
+SPNLP Syntactical Graph Dependency Parser (DP) Word Vectors - generate dependency parse tree/graph using input vectors (based on adjacent constituency branch word frequency heuristics)
+ 
 Preconditions: assumes syntactical/constituency graph/tree already generated
 
 """
@@ -28,7 +28,7 @@ import SPNLPpy_syntacticalGraphOperations
 calibrateConnectionMetricParameters = True
 
 #experimental
-def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, sentenceTreeNodeList, syntacticalGraphNodeDictionary, constituencyParserGraphHeadNode, performIntermediarySyntacticalTransformation):
+def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, CPsentenceTreeNodeList, syntacticalGraphNodeDictionary, CPgraphHeadNode, performIntermediarySyntacticalTransformation):
 	
 	for leafNode in sentenceLeafNodeList:
 		identifyPrimarySourceNodeSentence(leafNode, performIntermediarySyntacticalTransformation)
@@ -37,24 +37,24 @@ def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLe
 	for leafNode in sentenceLeafNodeList:
 		formDependencyRelations(leafNode, performIntermediarySyntacticalTransformation)
 	
-	print("constituencyParserGraphHeadNode.primaryLeafNode.lemma = ", constituencyParserGraphHeadNode.primaryLeafNode.lemma)
+	print("CPgraphHeadNode.CPprimaryLeafNode.lemma = ", CPgraphHeadNode.CPprimaryLeafNode.lemma)
 	
-	dependencyParserGraphHeadNode = constituencyParserGraphHeadNode.primaryLeafNode
+	DPgraphHeadNode = CPgraphHeadNode.CPprimaryLeafNode
 
-	calculateNodeTreeLevelSentence(dependencyParserGraphHeadNode)
+	calculateNodeTreeLevelSentence(DPgraphHeadNode)
 	
-	return dependencyParserGraphHeadNode
+	return DPgraphHeadNode
 
 def identifyPrimarySourceNodeSentence(node, performIntermediarySyntacticalTransformation):	
 	#print("identifyPrimarySourceNodeSentence: node = ", node.lemma)
 
-	if(len(node.graphNodeTargetList) > 0):
-		for targetNode in node.graphNodeTargetList:
-			isPrimarySourceNode = identifyPrimarySourceNode(node, targetNode, performIntermediarySyntacticalTransformation)
-			if(isPrimarySourceNode):
+	if(len(node.CPgraphNodeTargetList) > 0):
+		for targetNode in node.CPgraphNodeTargetList:
+			CPisPrimarySourceNode = identifyPrimarySourceNode(node, targetNode, performIntermediarySyntacticalTransformation)
+			if(CPisPrimarySourceNode):
 				identifyPrimarySourceNodeSentence(targetNode, performIntermediarySyntacticalTransformation)
 	else:
-		node.isPrimarySourceNode = True
+		node.CPisPrimarySourceNode = True
 	
 def identifyPrimarySourceNode(node, targetNode, performIntermediarySyntacticalTransformation):
 	
@@ -73,25 +73,25 @@ def identifyPrimarySourceNode(node, targetNode, performIntermediarySyntacticalTr
 			#print("comparison1 = ", comparison1) 
 			#print("comparison2 = ", comparison2)
 			if(comparison1 < comparison2):
-				node.isPrimarySourceNode = True
+				node.CPisPrimarySourceNode = True
 			elif(comparison1 == comparison2):
 				#print("SPNLPpy_syntacticalGraphConstituencyParserWordVectors: identifyPrimarySourceNode warning: comparison1 == comparison2")
-				if(node.sourceNodePosition == sourceNodePositionFirst):
-					node.isPrimarySourceNode = True
+				if(node.CPsourceNodePosition == sourceNodePositionFirst):
+					node.CPisPrimarySourceNode = True
 		else:
-			node.isPrimarySourceNode = True
+			node.CPisPrimarySourceNode = True
 	else:
 		#print("!adjacentBranchFound")
 		#targetNode is graphNodeHead; set first node in targetNode.source as governor	#CHECKTHIS
-		#print("node.sourceNodePosition = ", node.sourceNodePosition)
-		if(node.sourceNodePosition == sourceNodePositionFirst):
-			node.isPrimarySourceNode = True
-	return node.isPrimarySourceNode
+		#print("node.CPsourceNodePosition = ", node.CPsourceNodePosition)
+		if(node.CPsourceNodePosition == sourceNodePositionFirst):
+			node.CPisPrimarySourceNode = True
+	return node.CPisPrimarySourceNode
 			
 def identifyAdjacentNode(node, targetNode):
 	adjacentNodeFound = False
 	adjacentNode = None
-	for nodeTemp in targetNode.graphNodeSourceList:
+	for nodeTemp in targetNode.CPgraphNodeSourceList:
 		if(nodeTemp is not node):
 			adjacentNodeFound = True
 			adjacentNode = nodeTemp
@@ -109,42 +109,42 @@ def identifyAdjacentNode(node, targetNode):
 def identifyAdjacentBranchNode(node, targetNode):
 	adjacentBranchFound = False
 	adjacentBranchNode = None
-	for branchHead in targetNode.graphNodeTargetList:
-		for adjacentBranch in branchHead.graphNodeSourceList:
+	for branchHead in targetNode.CPgraphNodeTargetList:
+		for adjacentBranch in branchHead.CPgraphNodeSourceList:
 			adjacentBranchFound = True
 			adjacentBranchNode = adjacentBranch
 	return adjacentBranchFound, adjacentBranchNode
 	
-def recordPrimaryLeafNodeSentence(node, primaryLeafNode, performIntermediarySyntacticalTransformation):
-	node.primaryLeafNode = primaryLeafNode
-	#print("recordPrimaryLeafNodeSentence: node = ", node.lemma, ", primaryLeafNode = ", primaryLeafNode.lemma)
-	if(node.isPrimarySourceNode):
-		for targetNode in node.graphNodeTargetList:
-			recordPrimaryLeafNodeSentence(targetNode, primaryLeafNode, performIntermediarySyntacticalTransformation)
+def recordPrimaryLeafNodeSentence(node, CPprimaryLeafNode, performIntermediarySyntacticalTransformation):
+	node.CPprimaryLeafNode = CPprimaryLeafNode
+	#print("recordPrimaryLeafNodeSentence: node = ", node.lemma, ", CPprimaryLeafNode = ", CPprimaryLeafNode.lemma)
+	if(node.CPisPrimarySourceNode):
+		for targetNode in node.CPgraphNodeTargetList:
+			recordPrimaryLeafNodeSentence(targetNode, CPprimaryLeafNode, performIntermediarySyntacticalTransformation)
 			#adjacentNodeFound, adjacentNode = identifyAdjacentNode(node, targetNode)
 
 
 def formDependencyRelations(node, performIntermediarySyntacticalTransformation):	
 	#print("formDependencyRelations: node = ", node.lemma)
-	for targetNode in node.graphNodeTargetList:
-		if(node.isPrimarySourceNode):
+	for targetNode in node.CPgraphNodeTargetList:
+		if(node.CPisPrimarySourceNode):
 			adjacentNodeFound, adjacentNode = identifyAdjacentNode(node, targetNode)
 			#print("\t formDependencyRelations: adjacentNode = ", adjacentNode.lemma)
 			if(adjacentNodeFound):
-				node.primaryLeafNode.dependencyParserDependentList.append(adjacentNode.primaryLeafNode)	
-				adjacentNode.primaryLeafNode.dependencyParserGovernorList.append(node.primaryLeafNode)	
+				node.CPprimaryLeafNode.DPdependentList.append(adjacentNode.CPprimaryLeafNode)	
+				adjacentNode.CPprimaryLeafNode.DPgovernorList.append(node.CPprimaryLeafNode)
 			formDependencyRelations(targetNode, performIntermediarySyntacticalTransformation)
 
 def calculateNodeTreeLevelSentence(syntacticalGraphNode):	
 	treeLevel = calculateNodeTreeLevel(syntacticalGraphNode, 0)
 	#print("treeLevel = ", treeLevel)
-	syntacticalGraphNode.dependencyParserTreeLevel = treeLevel
-	for sourceNode in syntacticalGraphNode.dependencyParserDependentList:
+	syntacticalGraphNode.DPtreeLevel = treeLevel
+	for sourceNode in syntacticalGraphNode.DPdependentList:
 		calculateNodeTreeLevelSentence(sourceNode)
 
 def calculateNodeTreeLevel(syntacticalGraphNode, treeLevel):	
 	maxTreeLevelBranch = treeLevel
-	for sourceNode in syntacticalGraphNode.dependencyParserDependentList:
+	for sourceNode in syntacticalGraphNode.DPdependentList:
 		treeLevelTemp = calculateNodeTreeLevel(sourceNode, treeLevel+1)
 		if(treeLevelTemp > maxTreeLevelBranch):
 			maxTreeLevelBranch = treeLevelTemp

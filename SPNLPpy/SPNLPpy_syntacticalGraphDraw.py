@@ -74,13 +74,13 @@ def drawSyntacticalGraphSentence(syntacticalGraphNode, syntacticalGraphType, dra
 		 
 	if(drawNode):
 		if(syntacticalGraphType == syntacticalGraphTypeConstituencyTree):
-			drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.constituencyParserTreeLevel, sentenceIndex)
-			for sourceNode in syntacticalGraphNode.graphNodeSourceList:
+			drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.CPtreeLevel, sentenceIndex)
+			for sourceNode in syntacticalGraphNode.CPgraphNodeSourceList:
 				drawSyntacticalGraphConnection(syntacticalGraphNode, sourceNode)
 				drawSyntacticalGraphSentence(sourceNode, syntacticalGraphType, drawGraphNetwork)	
 		elif(syntacticalGraphType == syntacticalGraphTypeDependencyTree):
-			drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.dependencyParserTreeLevel, sentenceIndex)
-			for sourceNode in syntacticalGraphNode.dependencyParserDependentList:
+			drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.DPtreeLevel, sentenceIndex)
+			for sourceNode in syntacticalGraphNode.DPdependentList:
 				drawSyntacticalGraphConnection(syntacticalGraphNode, sourceNode)
 				drawSyntacticalGraphSentence(sourceNode, syntacticalGraphType, drawGraphNetwork)
 					
@@ -108,10 +108,10 @@ def drawSyntacticalGraphSentenceReset(syntacticalGraphNode, syntacticalGraphType
 	if(syntacticalGraphNode.drawn):
 		syntacticalGraphNode.drawn = False
 		if(syntacticalGraphType == syntacticalGraphTypeConstituencyTree):
-			for sourceNode in syntacticalGraphNode.graphNodeSourceList:
+			for sourceNode in syntacticalGraphNode.CPgraphNodeSourceList:
 				drawSyntacticalGraphSentenceReset(sourceNode, syntacticalGraphType)		
 		elif(syntacticalGraphType == syntacticalGraphTypeDependencyTree):
-			for sourceNode in syntacticalGraphNode.dependencyParserDependentList:
+			for sourceNode in syntacticalGraphNode.DPdependentList:
 				drawSyntacticalGraphSentenceReset(sourceNode, syntacticalGraphType)
 
 def drawSyntacticalGraphNodeAndConnections(syntacticalGraphNode, syntacticalGraphType, drawGraphNetwork=False):	
@@ -120,11 +120,11 @@ def drawSyntacticalGraphNodeAndConnections(syntacticalGraphNode, syntacticalGrap
 	else:
 		 sentenceIndex = 0
 	if(syntacticalGraphType == syntacticalGraphTypeConstituencyTree):
-		drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.constituencyParserTreeLevel, sentenceIndex)
-		for sourceNode in syntacticalGraphNode.graphNodeSourceList:
+		drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.CPtreeLevel, sentenceIndex)
+		for sourceNode in syntacticalGraphNode.CPgraphNodeSourceList:
 			drawSyntacticalGraphConnection(syntacticalGraphNode, sourceNode)
 	elif(syntacticalGraphType == syntacticalGraphTypeDependencyTree):
-		drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.dependencyParserTreeLevel, sentenceIndex)
-		for sourceNode in syntacticalGraphNode.dependencyParserDependentList:
+		drawSyntacticalGraphNode(syntacticalGraphNode, syntacticalGraphNode.w, syntacticalGraphNode.DPtreeLevel, sentenceIndex)
+		for sourceNode in syntacticalGraphNode.DPdependentList:
 			drawSyntacticalGraphConnection(syntacticalGraphNode, sourceNode)
 		

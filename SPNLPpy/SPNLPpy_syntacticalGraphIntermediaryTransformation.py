@@ -70,19 +70,19 @@ def identifyMultiwordRelationshipLeafNodes(sentenceSyntacticalLeafNodeList):
 	leafNodesToAdd = []
 	leafNodeInsertionIndex = -1
 	for leafNodeIndex, leafNode in enumerate(sentenceSyntacticalLeafNodeList):
-		if(not leafNode.multiwordLeafNode):
+		if(not leafNode.CPmultiwordLeafNode):
 			#print("leafNode = ", leafNode.lemma)
-			currentBranchNode = leafNode.graphNodeTargetList[graphNodeTargetIndex]
-			sourceNode1 = currentBranchNode.graphNodeSourceList[graphNodeSourceIndexFirst]
-			sourceNode2 = currentBranchNode.graphNodeSourceList[graphNodeSourceIndexSecond]
+			currentBranchNode = leafNode.CPgraphNodeTargetList[graphNodeTargetIndex]
+			sourceNode1 = currentBranchNode.CPgraphNodeSourceList[graphNodeSourceIndexFirst]
+			sourceNode2 = currentBranchNode.CPgraphNodeSourceList[graphNodeSourceIndexSecond]
 			if((sourceNode1.graphNodeType == graphNodeTypeLeaf) and (sourceNode2.graphNodeType == graphNodeTypeLeaf)):
 				#print("sourceNode1.entityType = ", sourceNode1.entityType)
 				#print("sourceNode2.entityType = ", sourceNode2.entityType)
 				if(isMultiwordRelationship(sourceNode1, sourceNode2)):
 					currentBranchNode.entityType = sourceNode1.entityType	#CHECKTHIS: first word in phrasal verb/multiword preposition, auxiliary sequence
 					#print("multiword verbs/prepositions found")
-					sourceNode1.multiwordLeafNode = True
-					sourceNode2.multiwordLeafNode = True
+					sourceNode1.CPmultiwordLeafNode = True
+					sourceNode2.CPmultiwordLeafNode = True
 					leafNodeInsertionIndex = leafNodeInsertionIndex
 					leafNodesToRemove.append(sourceNode1)
 					leafNodesToRemove.append(sourceNode2)
@@ -112,14 +112,14 @@ def moveRelationshipSyntacticalNodes(sentenceSyntacticalLeafNodeList, sentenceSy
 		if(SPNLPpy_semanticNodeClass.entityTypeIsRelationship(entityType)):
 			#print("entityTypeIsRelationship")
 			#if first or last leaf in syntactical branch is relationship node (verb/proposition:action/condition) - transport the adjacent branch contents to the subject/object of the relationship node, and place the relationship node between the two branches;
-			if(leafNode.sourceNodePosition == sourceNodePositionFirst):
+			if(leafNode.CPsourceNodePosition == sourceNodePositionFirst):
 				#the first leaf element in branch connects to entire previous branch
 				foundBranchHead, branchHead, relationshipNode = findBranchHead(leafNode, branchEdgeFirstOrLast=True)		
-			elif(leafNode.sourceNodePosition == sourceNodePositionSecond):
+			elif(leafNode.CPsourceNodePosition == sourceNodePositionSecond):
 				#the last leaf element in branch connects to entire next branch
 				foundBranchHead, branchHead, relationshipNode = findBranchHead(leafNode, branchEdgeFirstOrLast=False)	
-			elif(leafNode.sourceNodePosition == sourceNodePositionUnknown):
-				print("moveRelationshipSyntacticalNodes error: (leafNode.sourceNodePosition == sourceNodePositionUnknown)")
+			elif(leafNode.CPsourceNodePosition == sourceNodePositionUnknown):
+				print("moveRelationshipSyntacticalNodes error: (leafNode.CPsourceNodePosition == sourceNodePositionUnknown)")
 				exit()
 
 			if(branchHead.graphNodeType == graphNodeTypeHead):
@@ -139,10 +139,10 @@ def moveRelationshipSyntacticalNodes(sentenceSyntacticalLeafNodeList, sentenceSy
 				#tree head found before finding final matched branch head
 				if(SPNLPpy_semanticNodeClass.entityIsRelationshipAction(entityType)):
 					#relationship node found without either a subject or object
-					if(leafNode.sourceNodePosition == sourceNodePositionFirst):
+					if(leafNode.CPsourceNodePosition == sourceNodePositionFirst):
 						#relationship node found without subject
 						branchHeadSourceSecondFound = True
-					elif(leafNode.sourceNodePosition == sourceNodePositionSecond):
+					elif(leafNode.CPsourceNodePosition == sourceNodePositionSecond):
 						#relationship node found without object
 						branchHeadSourceFirstFound = True
 				elif(SPNLPpy_semanticNodeClass.entityIsRelationshipCondition(entityType)):
@@ -164,20 +164,20 @@ def findBranchHead(leafNode, branchEdgeFirstOrLast):
 			branchHead = currentBranchNode
 			branchSourceNodePositionIsEdge = False	#exit loop
 		else: 
-			currentBranchNode = currentBranchNode.graphNodeTargetList[graphNodeTargetIndex]
+			currentBranchNode = currentBranchNode.CPgraphNodeTargetList[graphNodeTargetIndex]
 					
-			if(currentBranchNode.sourceNodePosition != sourceNodePositionUnknown):
+			if(currentBranchNode.CPsourceNodePosition != sourceNodePositionUnknown):
 				if(branchEdgeFirstOrLast):
 					currentBranchNode.lemma = currentBranchNode.lemma[len(relationshipNode.lemma):] #remove relationship from name
-					if(currentBranchNode.sourceNodePosition != sourceNodePositionFirst):
+					if(currentBranchNode.CPsourceNodePosition != sourceNodePositionFirst):
 						branchSourceNodePositionIsEdge = False
-						branchHead = currentBranchNode.graphNodeTargetList[graphNodeTargetIndex]
+						branchHead = currentBranchNode.CPgraphNodeTargetList[graphNodeTargetIndex]
 						foundBranchHead = True
 				else:
 					currentBranchNode.lemma = currentBranchNode.lemma[:-len(relationshipNode.lemma)] #remove relationship from name
-					if(currentBranchNode.sourceNodePosition != sourceNodePositionSecond):
+					if(currentBranchNode.CPsourceNodePosition != sourceNodePositionSecond):
 						branchSourceNodePositionIsEdge = False
-						branchHead = currentBranchNode.graphNodeTargetList[graphNodeTargetIndex]
+						branchHead = currentBranchNode.CPgraphNodeTargetList[graphNodeTargetIndex]
 						foundBranchHead = True
 			
 	return foundBranchHead, branchHead, relationshipNode

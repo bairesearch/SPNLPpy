@@ -185,20 +185,20 @@ def entityIsRelationshipCondition(entityType):
 		result = True
 	return result
 	
-def getRelationshipEntityConnection(relationshipEntity, sourceEntity, sourceNodePosition):
+def getRelationshipEntityConnection(relationshipEntity, sourceEntity, CPsourceNodePosition):
 	relationshipEntityConnection = None	
 	if(entity.entityType == GIA_ENTITY_TYPE_ACTION):
-		if(sourceNodePosition == sourceNodePositionFirst):
+		if(CPsourceNodePosition == sourceNodePositionFirst):
 			relationshipEntityConnectionType = GIA_ENTITY_VECTOR_CONNECTION_TYPE_ACTION_REVERSE
 			#relationshipEntityConnection = sourceEntity.actionReverseNodeList[firstIndexInConnectionList]
-		elif(sourceNodePosition == sourceNodePositionSecond):
+		elif(CPsourceNodePosition == sourceNodePositionSecond):
 			relationshipEntityConnectionType = GIA_ENTITY_VECTOR_CONNECTION_TYPE_ACTION
 			#relationshipEntityConnection = sourceEntity.actionNodeList[firstIndexInConnectionList]	
 	elif(entity.entityType == GIA_ENTITY_TYPE_CONDITION):
-		if(sourceNodePosition == sourceNodePositionFirst):
+		if(CPsourceNodePosition == sourceNodePositionFirst):
 			relationshipEntityConnectionType = GIA_ENTITY_VECTOR_CONNECTION_TYPE_CONDITION_REVERSE
 			#relationshipEntityConnection = sourceEntity.conditionReverseNodeList[firstIndexInConnectionList]
-		elif(sourceNodePosition == sourceNodePositionSecond):
+		elif(CPsourceNodePosition == sourceNodePositionSecond):
 			relationshipEntityConnectionType = GIA_ENTITY_VECTOR_CONNECTION_TYPE_CONDITION
 			#relationshipEntityConnection = sourceEntity.conditionNodeList[firstIndexInConnectionList]
 	

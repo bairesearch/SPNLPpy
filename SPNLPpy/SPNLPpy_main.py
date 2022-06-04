@@ -185,8 +185,8 @@ def processingSimple(articles):
 		syntacticalGraphNetwork = SPNLPpy_syntacticalGraph.generateSyntacticalGraphNetwork(articles, performIntermediarySyntacticalTransformation, generateSyntacticalGraphNetwork, identifySyntacticalDependencyRelations)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence		
 	elif(algorithmSPNLP == "generateSemanticGraph"):
 		for sentenceIndex, sentence in enumerate(articles):
-			sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode = SPNLPpy_syntacticalGraph.generateSyntacticalGraphSentenceString(sentenceIndex, textContentList, performIntermediarySyntacticalTransformation, generateSyntacticalGraphNetwork, identifySyntacticalDependencyRelations)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence
-			SPNLPpy_semanticGraph.generateSemanticGraphSentence(sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode, generateSemanticGraphNetwork)		
+			sentenceLeafNodeList, CPsentenceTreeNodeList, graphHeadNode = SPNLPpy_syntacticalGraph.generateSyntacticalGraphSentenceString(sentenceIndex, textContentList, performIntermediarySyntacticalTransformation, generateSyntacticalGraphNetwork, identifySyntacticalDependencyRelations)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence
+			SPNLPpy_semanticGraph.generateSemanticGraphSentence(sentenceLeafNodeList, CPsentenceTreeNodeList, graphHeadNode, generateSemanticGraphNetwork)		
 							
 def trainSequentialInputNetworkSimple(articles):
 	for sentenceIndex, sentence in enumerate(articles):
