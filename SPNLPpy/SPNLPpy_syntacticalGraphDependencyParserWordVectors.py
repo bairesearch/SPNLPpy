@@ -1,4 +1,4 @@
-"""SPNLPpy_syntacticalGraphConstituencyParserWordVectors.py
+"""SPNLPpy_syntacticalGraphDependencyParserWordVectors.py
 
 # Author:
 Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
@@ -26,6 +26,8 @@ from SPNLPpy_syntacticalNodeClass import *
 import SPNLPpy_syntacticalGraphOperations
 
 calibrateConnectionMetricParameters = True
+
+primarySourceNodeDetectionCompareBranchHeadOrAdjacentBranchWordVector = False
 
 #experimental
 def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, CPsentenceTreeNodeList, syntacticalGraphNodeDictionary, CPgraphHeadNode, performIntermediarySyntacticalTransformation):
@@ -59,17 +61,20 @@ def identifyPrimarySourceNodeSentence(node, performIntermediarySyntacticalTransf
 def identifyPrimarySourceNode(node, targetNode, performIntermediarySyntacticalTransformation):
 	
 	#print("identifyPrimarySourceNode: node = ", node.lemma, ", targetNode = ", targetNode.lemma)
-	adjacentBranchFound, adjacentBranchNode = identifyAdjacentBranchNode(node, targetNode)
-	if(adjacentBranchFound):
-		#print("adjacentBranchFound")
+	if(primarySourceNodeDetectionCompareBranchHeadOrAdjacentBranchWordVector):
+		comparisonBranchFound, comparisonBranchNode = identifyBranchHeadNode(node, targetNode)
+	else:
+		comparisonBranchFound, comparisonBranchNode = identifyAdjacentBranchNode(node, targetNode)
+	if(comparisonBranchFound):
+		#print("comparisonBranchFound")
 		adjacentNodeFound, adjacentNode = identifyAdjacentNode(node, targetNode)
 		if(adjacentNodeFound):
 			#CHECKTHIS #if parentX child1 [leaf] node is more associated with adjacent branch than parentX child2 [leaf] node than it becomes the primary node
-			comparison1 = SPNLPpy_syntacticalGraphOperations.compareWordVectors(node.wordVector, adjacentBranchNode.wordVector)
-			comparison2 = SPNLPpy_syntacticalGraphOperations.compareWordVectors(adjacentNode.wordVector, adjacentBranchNode.wordVector)
+			comparison1 = SPNLPpy_syntacticalGraphOperations.compareWordVectors(node.wordVector, comparisonBranchNode.wordVector)
+			comparison2 = SPNLPpy_syntacticalGraphOperations.compareWordVectors(adjacentNode.wordVector, comparisonBranchNode.wordVector)
 			#print("node.wordVector = ", node.wordVector) 
 			#print("adjacentNode.wordVector = ", adjacentNode.wordVector) 
-			#print("adjacentBranchNode.wordVector = ", adjacentBranchNode.wordVector) 
+			#print("comparisonBranchNode.wordVector = ", comparisonBranchNode.wordVector) 
 			#print("comparison1 = ", comparison1) 
 			#print("comparison2 = ", comparison2)
 			if(comparison1 < comparison2):
@@ -81,7 +86,7 @@ def identifyPrimarySourceNode(node, targetNode, performIntermediarySyntacticalTr
 		else:
 			node.CPisPrimarySourceNode = True
 	else:
-		#print("!adjacentBranchFound")
+		#print("!comparisonBranchFound")
 		#targetNode is graphNodeHead; set first node in targetNode.source as governor	#CHECKTHIS
 		#print("node.CPsourceNodePosition = ", node.CPsourceNodePosition)
 		if(node.CPsourceNodePosition == sourceNodePositionFirst):
@@ -105,7 +110,15 @@ def identifyAdjacentNode(node, targetNode):
 			exit()
 				
 	return adjacentNodeFound, adjacentNode
-					
+
+def identifyBranchHeadNode(node, targetNode):
+	branchHeadFound = False
+	branchHeadNode = None
+	for branchHead in targetNode.CPgraphNodeTargetList:
+		branchHeadFound = True
+		branchHeadNode = branchHead
+	return branchHeadFound, branchHeadNode
+						
 def identifyAdjacentBranchNode(node, targetNode):
 	adjacentBranchFound = False
 	adjacentBranchNode = None
