@@ -66,7 +66,7 @@ syntacticalGraphNodeDictionary = {}	#dict indexed by lemma, every entry is a dic
 #syntacticalGraphConnectionsDictionary = {}	#dict indexed tuples (lemma1, instanceID1, lemma2, instanceID2), every entry is a tuple of SyntacticalNode instances/concepts (instanceNode1, instanceNode2) [directionality: 1=source, 2=target]
 	#this is used for visualisation/fast lookup purposes only - can trace node CPgraphNodeTargetList/CPgraphNodeSourceList instead
 
-headNodeList = []
+networkHeadNodeList = []
 
 def generateSyntacticalGraphNetwork(articles, performIntermediarySyntacticalTransformation, generateSyntacticalGraphNetwork, identifySyntacticalDependencyRelations):
 		
@@ -151,44 +151,46 @@ def generateSyntacticalGraphSentence(sentenceIndex, tokenisedSentence, performIn
 		#   SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNode(instanceNode, w, CPtreeLevel)   #drawn later
 			
 	if(constituencyParserType == "constituencyParserWordVector"):
-		graphHeadNode = SPNLPpy_syntacticalGraphConstituencyParserWordVectors.generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, CPsentenceTreeNodeList, CPconnectivityStackNodeList, syntacticalGraphNodeDictionary)		
+		CPgraphHeadNode = SPNLPpy_syntacticalGraphConstituencyParserWordVectors.generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, CPsentenceTreeNodeList, CPconnectivityStackNodeList, syntacticalGraphNodeDictionary)		
 	elif(constituencyParserType == "constituencyParserFormal"):
-		graphHeadNode = SPNLPpy_syntacticalGraphConstituencyParserFormal.generateSyntacticalTreeConstituencyParserFormal(sentenceIndex, tokenisedSentence, sentenceLeafNodeList, CPsentenceTreeNodeList, syntacticalGraphNodeDictionary)
+		CPgraphHeadNode = SPNLPpy_syntacticalGraphConstituencyParserFormal.generateSyntacticalTreeConstituencyParserFormal(sentenceIndex, tokenisedSentence, sentenceLeafNodeList, CPsentenceTreeNodeList, syntacticalGraphNodeDictionary)
 
 	if(drawSyntacticalGraphSentence):
 		SPNLPpy_syntacticalGraphDrawSentence.clearSyntacticalGraph()
-		SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphSentence(graphHeadNode, SPNLPpy_syntacticalGraphDrawSentence.syntacticalGraphTypeConstituencyTree, drawGraphNetwork=False)
+		SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphSentence(CPgraphHeadNode, SPNLPpy_syntacticalGraphDrawSentence.syntacticalGraphTypeConstituencyTree, drawGraphNetwork=False)
 		print("SPNLPpy_syntacticalGraphDrawSentence.displaySyntacticalGraph(syntacticalGraphTypeConstituencyTree)")
 		SPNLPpy_syntacticalGraphDrawSentence.displaySyntacticalGraph()
 				
 	if(performIntermediarySyntacticalTransformation):
-		SPNLPpy_syntacticalGraphIntermediaryTransformation.performIntermediarySyntacticalTransformation(constituencyParserType, sentenceLeafNodeList, CPsentenceTreeNodeList, graphHeadNode)
+		SPNLPpy_syntacticalGraphIntermediaryTransformation.performIntermediarySyntacticalTransformation(constituencyParserType, sentenceLeafNodeList, CPsentenceTreeNodeList, CPgraphHeadNode)
 	
 	if(identifySyntacticalDependencyRelations):
 		if(dependencyParserType == "dependencyParserWordVector"):
-			graphHeadNode = SPNLPpy_syntacticalGraphDependencyParserWordVectors.generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, CPsentenceTreeNodeList, syntacticalGraphNodeDictionary, graphHeadNode, performIntermediarySyntacticalTransformation)		
+			DPgraphHeadNode = SPNLPpy_syntacticalGraphDependencyParserWordVectors.generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, CPsentenceTreeNodeList, syntacticalGraphNodeDictionary, CPgraphHeadNode, performIntermediarySyntacticalTransformation)		
 		elif(dependencyParserType == "dependencyParserFormal"):
-			graphHeadNode = SPNLPpy_syntacticalGraphDependencyParserFormal.generateSyntacticalTreeDependencyParserFormal(sentenceIndex, tokenisedSentence, sentenceLeafNodeList, CPsentenceTreeNodeList, syntacticalGraphNodeDictionary)
+			DPgraphHeadNode = SPNLPpy_syntacticalGraphDependencyParserFormal.generateSyntacticalTreeDependencyParserFormal(sentenceIndex, tokenisedSentence, sentenceLeafNodeList, CPsentenceTreeNodeList, syntacticalGraphNodeDictionary)
 
 		if(drawSyntacticalGraphSentence):
 			SPNLPpy_syntacticalGraphDrawSentence.clearSyntacticalGraph()
-			SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphSentence(graphHeadNode, SPNLPpy_syntacticalGraphDrawSentence.syntacticalGraphTypeDependencyTree, drawGraphNetwork=False)
+			SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphSentence(DPgraphHeadNode, SPNLPpy_syntacticalGraphDrawSentence.syntacticalGraphTypeDependencyTree, drawGraphNetwork=False)
 			print("SPNLPpy_syntacticalGraphDrawSentence.displaySyntacticalGraph(syntacticalGraphTypeDependencyTree)")
 			SPNLPpy_syntacticalGraphDrawSentence.displaySyntacticalGraph()
 			
 		syntacticalGraphType = SPNLPpy_syntacticalGraphDrawSentence.syntacticalGraphTypeDependencyTree
+		graphHeadNode = DPgraphHeadNode
 	else:
 		syntacticalGraphType = SPNLPpy_syntacticalGraphDrawSentence.syntacticalGraphTypeConstituencyTree
+		graphHeadNode = CPgraphHeadNode
 		
-	headNodeList.append(graphHeadNode)
+	networkHeadNodeList.append(graphHeadNode)
 				
 	if(generateSyntacticalGraphNetwork):
 		if(performReferenceResolution):
 			#peform reference resolution after building syntactical tree (any instance of successful reference identification will insert syntactical tree into syntactical graph/network)
-			SPNLPpy_syntacticalGraphOperations.identifyBranchReferences(syntacticalGraphNodeDictionary, CPsentenceTreeNodeList, graphHeadNode, currentTime)
+			SPNLPpy_syntacticalGraphOperations.identifyBranchReferences(syntacticalGraphNodeDictionary, CPsentenceTreeNodeList, CPgraphHeadNode, currentTime)
 
 		if(drawSyntacticalGraphNetwork):
-			SPNLPpy_syntacticalGraphDrawNetwork.drawSyntacticalGraphNetwork(headNodeList, syntacticalGraphType)
+			SPNLPpy_syntacticalGraphDrawNetwork.drawSyntacticalGraphNetwork(networkHeadNodeList, syntacticalGraphType)
 			print("SPNLPpy_syntacticalGraphDrawNetwork.displaySyntacticalGraph()")
 			SPNLPpy_syntacticalGraphDrawNetwork.displaySyntacticalGraph()
 				
