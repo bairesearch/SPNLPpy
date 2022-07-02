@@ -48,17 +48,23 @@ if(dependencyParserType == "dependencyParserWordVector"):
 	import SPNLPpy_syntacticalGraphDependencyParserWordVectors
 elif(dependencyParserType == "dependencyParserFormal"):
 	import SPNLPpy_syntacticalGraphDependencyParserFormal
-	
-drawSyntacticalGraphSentence = True
-if(drawSyntacticalGraphSentence):
-	import SPNLPpy_syntacticalGraphDraw as SPNLPpy_syntacticalGraphDrawSentence
-drawSyntacticalGraphNetwork	= True	#draw graph for entire network (not just sentence)
-if(drawSyntacticalGraphNetwork):
-	import SPNLPpy_syntacticalGraphDraw as SPNLPpy_syntacticalGraphDrawNetwork
-drawSyntacticalGraphNodeColours = False	#enable for debugging SPNLPpy_syntacticalGraphIntermediaryTransformation
-if(drawSyntacticalGraphNodeColours):
-	from SPNLPpy_semanticNodeClass import identifyEntityType
 
+drawSyntacticalGraph = False
+if(drawSyntacticalGraph):	
+	drawSyntacticalGraphSentence = True
+	if(drawSyntacticalGraphSentence):
+		import SPNLPpy_syntacticalGraphDraw as SPNLPpy_syntacticalGraphDrawSentence
+	drawSyntacticalGraphNetwork	= True	#draw graph for entire network (not just sentence)
+	if(drawSyntacticalGraphNetwork):
+		import SPNLPpy_syntacticalGraphDraw as SPNLPpy_syntacticalGraphDrawNetwork
+	drawSyntacticalGraphNodeColours = False	#enable for debugging SPNLPpy_syntacticalGraphIntermediaryTransformation
+	if(drawSyntacticalGraphNodeColours):
+		from SPNLPpy_semanticNodeClass import identifyEntityType
+else:
+	drawSyntacticalGraphSentence = False
+	drawSyntacticalGraphNetwork = False
+	drawSyntacticalGraphNodeColours = False
+	
 performReferenceResolution = True
 
 
@@ -91,9 +97,10 @@ def generateSyntacticalGraphSentenceString(sentenceIndex, sentence, performInter
 			
 def generateSyntacticalGraphSentence(sentenceIndex, tokenisedSentence, performIntermediarySyntacticalTransformation, generateSyntacticalGraphNetwork, identifySyntacticalDependencyRelations):
 
-	SPNLPpy_syntacticalGraphDrawSentence.setColourSyntacticalNodes(drawSyntacticalGraphNodeColours)
-	#print("SPNLPpy_syntacticalGraph: SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours = ", SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours)
-	
+	if(drawSyntacticalGraphSentence):
+		SPNLPpy_syntacticalGraphDrawSentence.setColourSyntacticalNodes(drawSyntacticalGraphNodeColours)
+		#print("SPNLPpy_syntacticalGraph: SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours = ", SPNLPpy_syntacticalGraphDrawSentence.drawSyntacticalGraphNodeColours)
+
 	currentTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
 
 	if(generateSyntacticalGraphNetwork):
@@ -176,10 +183,12 @@ def generateSyntacticalGraphSentence(sentenceIndex, tokenisedSentence, performIn
 			print("SPNLPpy_syntacticalGraphDrawSentence.displaySyntacticalGraph(syntacticalGraphTypeDependencyTree)")
 			SPNLPpy_syntacticalGraphDrawSentence.displaySyntacticalGraph()
 			
-		syntacticalGraphType = SPNLPpy_syntacticalGraphDrawSentence.syntacticalGraphTypeDependencyTree
+		if(generateSyntacticalGraphNetwork):
+			syntacticalGraphType = SPNLPpy_syntacticalGraphDrawNetwork.syntacticalGraphTypeDependencyTree
 		graphHeadNode = DPgraphHeadNode
 	else:
-		syntacticalGraphType = SPNLPpy_syntacticalGraphDrawSentence.syntacticalGraphTypeConstituencyTree
+		if(generateSyntacticalGraphNetwork):
+			syntacticalGraphType = SPNLPpy_syntacticalGraphDrawNetwork.syntacticalGraphTypeConstituencyTree
 		graphHeadNode = CPgraphHeadNode
 		
 	networkHeadNodeList.append(graphHeadNode)
