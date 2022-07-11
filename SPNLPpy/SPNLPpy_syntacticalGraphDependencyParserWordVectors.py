@@ -27,7 +27,7 @@ import SPNLPpy_syntacticalGraphOperations
 
 calibrateConnectionMetricParameters = True
 
-interpretRightNodeAsGovernor = False
+interpretRightNodeAsGovernor = True
  
 def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, sentenceTreeNodeList, connectivityStackNodeList, syntacticalGraphNodeDictionary):
 

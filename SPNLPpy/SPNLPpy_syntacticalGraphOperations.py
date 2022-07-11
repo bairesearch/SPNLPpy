@@ -27,16 +27,34 @@ printVerbose = False
 calculateConnectionFrequencyUsingWordVectorSimilarity = True	#mandatory	#CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
 calculateReferenceFrequencyUsingWordVectorSimilarity = True	#optional	#else calculate reference similarity using calculateSubgraphNumberIdenticalConcepts
 
-calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic = False	#optional (not required to compare hidden node similarity as artificial word vectors are generated for new hidden nodes in sentence)	#else getBranchWordVector (flat)
-calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic = False	#optional (not required to compare hidden node concept recency as artificial concept recency values are generated for new hidden nodes in sentence)		#else getBranchConceptTime (flat)
-if(calculateReferenceFrequencyUsingWordVectorSimilarity):
-	calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic = False	#mandatory
-else:
-	calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic = True	#mandatory
-calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamic = False	#mandatory
+#configured by setParserType;
+calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic = False
+calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic = False
+calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic = False
+calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamic = False
+calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate = False
+calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulate = False
 
-calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate = True	#optional - branch wordVector calculated based on average of leafNode wordVectors, else average of previous branch wordVectors
-calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulate = True	#optional - branch conceptTime calculated based on average of leafNode conceptTime, else average of previous branch conceptTimes
+calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamicCP = False	#optional (not required to compare hidden node similarity as artificial word vectors are generated for new hidden nodes in sentence)	#else getBranchWordVector (flat)
+calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamicCP = False	#optional (not required to compare hidden node concept recency as artificial concept recency values are generated for new hidden nodes in sentence)		#else getBranchConceptTime (flat)
+if(calculateReferenceFrequencyUsingWordVectorSimilarity):
+	calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamicCP = False	#mandatory
+else:
+	calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamicCP = True	#mandatory
+calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamicCP = False	#mandatory
+calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulateCP = True	#optional - branch wordVector calculated based on average of leafNode wordVectors, else average of previous branch wordVectors
+calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulateCP = True	#optional - branch conceptTime calculated based on average of leafNode conceptTime, else average of previous branch conceptTimes
+
+calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamicDP = False	#optional (not required to compare subbranch node similarity as artificial word vectors are generated for subgraph head nodes in sentence?)	#else getBranchWordVector (flat)
+calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamicDP = False	#optional (not required to compare subbranch node concept recency as artificial concept recency values are generated for subgraph head nodes in sentence?)		#else getBranchConceptTime (flat)
+if(calculateReferenceFrequencyUsingWordVectorSimilarity):
+	calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamicDP = False	#mandatory
+else:
+	calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamicDP = True	#mandatory
+calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamicDP = False	#mandatory
+calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulateDP = False	#optional - branch wordVector calculated based on average of subbranch wordVectors, else branch/node wordVectors
+calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulateDP = False	#optional - branch conceptTime calculated based on average of subbranch conceptTime, else branch/node conceptTimes
+
 
 conceptID = 0	#special instance ID for concepts
 maxTimeDiff = 10.0	#calculateTimeDiff(minRecency)	#CHECKTHIS: requires calibration (<= ~10: ensures timeDiff for unencountered concepts is not infinite - required for metric)	#units: sentenceIndex
@@ -50,6 +68,28 @@ useDependencyParseTree = False	#False: constituencyParser, True: dependencyParse
 def setParserType(useDependencyParseTreeTemp):
 	global useDependencyParseTree
 	useDependencyParseTree = useDependencyParseTreeTemp
+
+	global calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic
+	global calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic
+	global calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic
+	global calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamic
+	global calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate
+	global calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulate
+	if(useDependencyParseTree):
+		calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic = calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamicDP
+		calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic = calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamicDP
+		calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic = calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamicDP
+		calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamic = calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamicDP
+		calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate = calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulateDP
+		calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulate = calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulateDP
+	else:
+		calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic = calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamicCP
+		calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic = calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamicCP
+		calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic = calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamicCP
+		calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamic = calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamicCP
+		calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate = calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulateCP
+		calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulate = calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulateCP
+
 
 #node:
 
@@ -265,7 +305,7 @@ def getBranchWordVector(node1):
 		else:
 			wordVector = np.divide(node1.conceptWordVector, node1.CPsubgraphSize)
 	else:
-		wordVector = np.divide(node1.wordVector)
+		wordVector = node1.wordVector
 	return wordVector
 
 #frequency metric 2 (identical concept similarity):
