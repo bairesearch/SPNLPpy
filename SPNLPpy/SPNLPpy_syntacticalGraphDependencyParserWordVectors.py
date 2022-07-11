@@ -27,6 +27,8 @@ import SPNLPpy_syntacticalGraphOperations
 
 calibrateConnectionMetricParameters = True
 
+interpretRightNodeAsGovernor = False
+ 
 def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, sentenceTreeNodeList, connectivityStackNodeList, syntacticalGraphNodeDictionary):
 
 	useDependencyParseTree = True
@@ -83,9 +85,14 @@ def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLe
 
 		if(SPNLPpy_syntacticalGraphOperations.printVerbose):
 			print("create connection; w1 w2 = ", connectionNode1.w, " ", connectionNode2.w, ", connectionNode1.lemma connectionNode2.lemma = ", connectionNode1.lemma, " ", connectionNode2.lemma, ", metric = ", maxConnectionMetric)
-
+		
+		if(interpretRightNodeAsGovernor):
+			connectionNode1Temp = connectionNode1
+			connectionNode1 = connectionNode2
+			connectionNode2 = connectionNode1Temp
 		#CHECKTHIS limitation - infers directionality (source/target) of connection based on w1/w2 word order		
-		connectionDirection = True	#CHECKTHIS: always assume left to right directionality	#FUTURE: determine governor/dependent based on some other rule
+		#CHECKTHIS: always assume left to right directionality	
+		#FUTURE: determine governor/dependent based on some other rule
 		#interpret connectionNode1=connectionNodeGovernor, connectionNode2=connectionNodeDependent
 		
 		#primary vars;
