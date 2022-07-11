@@ -1,7 +1,7 @@
 """SPNLPpy_syntacticalGraphConstituencyParserWordVectors.py
 
 # Author:
-Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
+Richard Bruce Baxter - Copyright (c) 2022 Baxter AI (baxterai.com)
 
 # License:
 MIT License
@@ -27,8 +27,11 @@ import SPNLPpy_syntacticalGraphOperations
 
 calibrateConnectionMetricParameters = True
 
-def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, CPsentenceTreeNodeList, CPconnectivityStackNodeList, syntacticalGraphNodeDictionary):
+def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, sentenceTreeNodeList, connectivityStackNodeList, syntacticalGraphNodeDictionary):
 
+	useDependencyParseTree = False
+	SPNLPpy_syntacticalGraphOperations.setParserType(useDependencyParseTree)
+	
 	currentTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
 
 	#add connections to local/isolated/temporary graph (syntactical tree);
@@ -48,8 +51,8 @@ def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentence
 
 		connectionFound = False
 
-		for node1StackIndex, node1 in enumerate(CPconnectivityStackNodeList):
-			for node2StackIndex, node2 in enumerate(CPconnectivityStackNodeList):
+		for node1StackIndex, node1 in enumerate(connectivityStackNodeList):
+			for node2StackIndex, node2 in enumerate(connectivityStackNodeList):
 				if(node1StackIndex != node2StackIndex):
 					#print("node1.CPwMax = ", node1.CPwMax)
 					#print("node2.CPwMin = ", node2.CPwMin)
@@ -57,8 +60,8 @@ def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentence
 						if(SPNLPpy_syntacticalGraphOperations.printVerbose):
 							print("calculateMetricConnection: node1.lemma = ", node1.lemma, ", node2.lemma = ", node2.lemma)
 						proximity = SPNLPpy_syntacticalGraphOperations.calculateProximityConnection(node1.w, node2.w)
-						frequency = SPNLPpy_syntacticalGraphOperations.calculateFrequencyConnection(CPsentenceTreeNodeList, node1, node2)
-						recency = SPNLPpy_syntacticalGraphOperations.calculateRecencyConnection(CPsentenceTreeNodeList, node1, node2, currentTime)	#minimise the difference in concept last access recency between left/right node
+						frequency = SPNLPpy_syntacticalGraphOperations.calculateFrequencyConnection(sentenceTreeNodeList, node1, node2)
+						recency = SPNLPpy_syntacticalGraphOperations.calculateRecencyConnection(sentenceTreeNodeList, node1, node2, currentTime)	#minimise the difference in concept last access recency between left/right node
 						connectionMetric = SPNLPpy_syntacticalGraphOperations.calculateMetricConnection(proximity, frequency, recency)
 						if(connectionMetric > SPNLPpy_syntacticalGraphOperations.metricThresholdToCreateConnection):
 							if(connectionMetric > maxConnectionMetric):
@@ -75,7 +78,7 @@ def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentence
 							metricList.append(connectionMetric)
 			
 		if(not connectionFound):
-			print("error connectionFound - check calculateMetricConnection parameters > 0.0, maxConnectionMetric = ", maxConnectionMetric)
+			print("generateSyntacticalTreeConstituencyParserWordVectors: error connectionFound - check calculateMetricConnection parameters > 0.0, maxConnectionMetric = ", maxConnectionMetric)
 			exit()
 
 		if(SPNLPpy_syntacticalGraphOperations.printVerbose):
@@ -93,7 +96,7 @@ def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentence
 		nodeGraphType = graphNodeTypeBranch
 
 		#sentenceTreeArtificial vars;
-		CPsubgraphSize = connectionNode1.CPsubgraphSize + connectionNode2.CPsubgraphSize + 1
+		SPsubgraphSize = connectionNode1.CPsubgraphSize + connectionNode2.CPsubgraphSize + 1
 		conceptWordVector = np.add(connectionNode1.conceptWordVector, connectionNode2.conceptWordVector)
 		conceptTime = connectionNode1.conceptTime + connectionNode2.conceptTime
 		CPtreeLevel = max(connectionNode1.CPtreeLevel, connectionNode2.CPtreeLevel) + 1
@@ -102,17 +105,17 @@ def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentence
 		CPwMax = max(connectionNode1.CPwMax, connectionNode2.CPwMax)
 
 		instanceID = SPNLPpy_syntacticalGraphOperations.getNewInstanceID(syntacticalGraphNodeDictionary, lemma)
-		hiddenNode = SyntacticalNode(instanceID, word, lemma, wordVector, posTag, nodeGraphType, currentTime, CPsubgraphSize, conceptWordVector, conceptTime, w, CPwMin, CPwMax, CPtreeLevel, sentenceIndex)
+		hiddenNode = SyntacticalNode(instanceID, word, lemma, wordVector, posTag, nodeGraphType, currentTime, SPsubgraphSize, conceptWordVector, conceptTime, w, CPwMin, CPwMax, CPtreeLevel, sentenceIndex)
 		SPNLPpy_syntacticalGraphOperations.addInstanceNodeToGraph(syntacticalGraphNodeDictionary, lemma, instanceID, hiddenNode)
 		
 		#connection vars;
-		SPNLPpy_syntacticalGraphOperations.createGraphConnectionWrapper(hiddenNode, connectionNode1, connectionNode2, connectionDirection, addToConnectionsDictionary=False)
-		CPsentenceTreeNodeList.append(hiddenNode)
-		CPconnectivityStackNodeList.remove(connectionNode1)
-		CPconnectivityStackNodeList.remove(connectionNode2)
-		CPconnectivityStackNodeList.append(hiddenNode)
+		SPNLPpy_syntacticalGraphOperations.createGraphConnectionWrapperCP(hiddenNode, connectionNode1, connectionNode2, connectionDirection, addToConnectionsDictionary=False)
+		sentenceTreeNodeList.append(hiddenNode)
+		connectivityStackNodeList.remove(connectionNode1)
+		connectivityStackNodeList.remove(connectionNode2)
+		connectivityStackNodeList.append(hiddenNode)
 
-		if(len(CPconnectivityStackNodeList) == 1):
+		if(len(connectivityStackNodeList) == 1):
 			headNodeFound = True
 			hiddenNode.graphNodeType = graphNodeTypeHead	#reference set delimiter (captures primary subject/action/object of sentence clause)
 			graphHeadNode = hiddenNode

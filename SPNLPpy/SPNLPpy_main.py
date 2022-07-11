@@ -1,7 +1,7 @@
 """SPNLPpy_main.py
 
 # Author:
-Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
+Richard Bruce Baxter - Copyright (c) 2022 Baxter AI (baxterai.com)
 
 # License:
 MIT License
@@ -46,7 +46,7 @@ algorithmSPNLP = "generateSyntacticalGraph"	#syntactical/semantic graph construc
 #algorithmSPNLP = "generateSemanticGraph"	#semantic graph construction based on transformation of syntactical graph	#incomplete
 
 #debug parameters
-debugUseSmallSequentialInputDataset = False
+debugUseSmallSequentialInputDataset = True
 if(algorithmSPNLP == "generateSyntacticalGraph"):
 	import SPNLPpy_syntacticalGraph
 	NLPsequentialInputTypeTokeniseWords = False	#perform spacy tokenization later in pipeline
@@ -185,8 +185,8 @@ def processingSimple(articles):
 		syntacticalGraphNetwork = SPNLPpy_syntacticalGraph.generateSyntacticalGraphNetwork(articles, performIntermediarySyntacticalTransformation, generateSyntacticalGraphNetwork, identifySyntacticalDependencyRelations)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence		
 	elif(algorithmSPNLP == "generateSemanticGraph"):
 		for sentenceIndex, sentence in enumerate(articles):
-			sentenceLeafNodeList, CPsentenceTreeNodeList, graphHeadNode = SPNLPpy_syntacticalGraph.generateSyntacticalGraphSentenceString(sentenceIndex, textContentList, performIntermediarySyntacticalTransformation, generateSyntacticalGraphNetwork, identifySyntacticalDependencyRelations)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence
-			SPNLPpy_semanticGraph.generateSemanticGraphSentence(sentenceLeafNodeList, CPsentenceTreeNodeList, graphHeadNode, generateSemanticGraphNetwork)		
+			sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode = SPNLPpy_syntacticalGraph.generateSyntacticalGraphSentenceString(sentenceIndex, textContentList, performIntermediarySyntacticalTransformation, generateSyntacticalGraphNetwork, identifySyntacticalDependencyRelations)	#!NLPsequentialInputTypeTokeniseWords: textContentList=sentence
+			SPNLPpy_semanticGraph.generateSemanticGraphSentence(sentenceLeafNodeList, sentenceTreeNodeList, graphHeadNode, generateSemanticGraphNetwork)		
 							
 def trainSequentialInputNetworkSimple(articles):
 	for sentenceIndex, sentence in enumerate(articles):

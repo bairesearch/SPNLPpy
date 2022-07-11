@@ -1,7 +1,7 @@
 """SPNLPpy_syntacticalNodeClass.py
 
 # Author:
-Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
+Richard Bruce Baxter - Copyright (c) 2022 Baxter AI (baxterai.com)
 
 # License:
 MIT License
@@ -47,19 +47,22 @@ class SyntacticalNode:
 		#sentenceTreeArtificial vars (for sentence graph only, do not generalise to network graph);
 		self.CPlabel = None	#not used (stored for reference)
 		self.CPsubgraphSize = CPsubgraphSize	#for constituencyParser	#used to normalise wordVector/conceptTime for hidden nodes
-		self.conceptWordVector = conceptWordVector	#requires /CPsubgraphSize
-		self.conceptTime = conceptTime	#requires /CPsubgraphSize
+		self.DPsubgraphSize = 1	#for dependencyParser	#used to normalise wordVector/conceptTime for subgraphs
+		self.conceptWordVector = conceptWordVector	#requires /SPsubgraphSize
+		self.conceptTime = conceptTime	#requires /SPsubgraphSize
 		self.w = w #temporary sentence word index (used for reference resolution only)
 		self.CPwMin = CPwMin	#temporary sentence word index (used for reference resolution only) - min of all hidden nodes
 		self.CPwMax = CPwMax	#temporary sentence word index (used for reference resolution only) - max of all hidden nodes
+		self.DPwMin = w	#temporary sentence word index (used for reference resolution only) - min of all hidden nodes
+		self.DPwMax = w	#temporary sentence word index (used for reference resolution only) - max of all hidden nodes
 		self.CPtreeLevel = CPtreeLevel	#for constituencyParser
+		self.DPtreeLevel = 0	#for dependencyParser
 		self.sentenceIndex = sentenceIndex
 		#self.referenceSentence = False	#temporary flag: node has been reference by current sentence (used for reference resolution only)
 		self.CPisPrimarySourceNode = False #temporary for SPNLPpy_syntacticalGraphConstituencyParserWordVectors only
 		self.CPprimaryLeafNode = None	#temporary for SPNLPpy_syntacticalGraphConstituencyParserWordVectors only
-		self.DPtreeLevel = 0	#for dependencyParser
 		self.DPdependencyRelationLabelList = []	#not used (stored for reference)	#stored in dependents (to governor)	#should only contain one element
-						
+
 		#connection vars;
 		self.CPgraphNodeTargetList = []	#for constituencyParser	#should only contain one element
 		self.CPgraphNodeSourceList = []	#for constituencyParse

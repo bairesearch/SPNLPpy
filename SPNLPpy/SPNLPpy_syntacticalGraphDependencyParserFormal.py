@@ -1,7 +1,7 @@
 """SPNLPpy_syntacticalGraphDependencyParserFormal.py
 
 # Author:
-Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
+Richard Bruce Baxter - Copyright (c) 2022 Baxter AI (baxterai.com)
 
 # License:
 MIT License
@@ -25,7 +25,7 @@ from SPNLPpy_syntacticalNodeClass import *
 
 dependencyTreeRootNodeName = "ROOT"
 
-def generateSyntacticalTreeDependencyParserFormal(sentenceIndex, tokenisedSentence, sentenceLeafNodeList, CPsentenceTreeNodeList, syntacticalGraphNodeDictionary):
+def generateSyntacticalTreeDependencyParserFormal(sentenceIndex, tokenisedSentence, sentenceLeafNodeList, sentenceTreeNodeList, syntacticalGraphNodeDictionary):
 
 	graphHeadNode = None
 	

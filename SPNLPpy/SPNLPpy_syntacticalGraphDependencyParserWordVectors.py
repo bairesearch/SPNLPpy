@@ -1,7 +1,7 @@
 """SPNLPpy_syntacticalGraphDependencyParserWordVectors.py
 
 # Author:
-Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
+Richard Bruce Baxter - Copyright (c) 2022 Baxter AI (baxterai.com)
 
 # License:
 MIT License
@@ -13,9 +13,9 @@ see SPNLPpy_main.py
 see SPNLPpy_main.py
 
 # Description:
-SPNLP Syntactical Graph Dependency Parser (DP) Word Vectors - generate dependency parse tree/graph using input vectors (based on adjacent constituency branch word frequency heuristics)
+SPNLP Syntactical Graph Dependency Parser (DP) Word Vectors - generate dependency parse tree/graph using input vectors (based on word proximity, frequency, and recency heuristics)
  
-Preconditions: assumes syntactical/constituency graph/tree already generated
+Preconditions: assumes leaf nodes already generated
 
 """
 
@@ -27,141 +27,103 @@ import SPNLPpy_syntacticalGraphOperations
 
 calibrateConnectionMetricParameters = True
 
-primarySourceNodeDetectionCompareBranchHeadOrAdjacentBranchWordVector = False
+def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, sentenceTreeNodeList, connectivityStackNodeList, syntacticalGraphNodeDictionary):
 
-#experimental
-def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, CPsentenceTreeNodeList, syntacticalGraphNodeDictionary, CPgraphHeadNode, performIntermediarySyntacticalTransformation):
+	useDependencyParseTree = True
+	SPNLPpy_syntacticalGraphOperations.setParserType(useDependencyParseTree)
 	
-	for leafNode in sentenceLeafNodeList:
-		identifyPrimarySourceNodeSentence(leafNode, performIntermediarySyntacticalTransformation)
-	for leafNode in sentenceLeafNodeList:
-		recordPrimaryLeafNodeSentence(leafNode, leafNode, performIntermediarySyntacticalTransformation)
-	for leafNode in sentenceLeafNodeList:
-		formDependencyRelations(leafNode, performIntermediarySyntacticalTransformation)
-	
-	print("CPgraphHeadNode.CPprimaryLeafNode.lemma = ", CPgraphHeadNode.CPprimaryLeafNode.lemma)
-	
-	DPgraphHeadNode = CPgraphHeadNode.CPprimaryLeafNode
+	currentTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
 
-	calculateNodeTreeLevelSentence(DPgraphHeadNode)
-	
-	return DPgraphHeadNode
+	#add connections to local/isolated/temporary graph (syntactical tree);
+	if(calibrateConnectionMetricParameters):
+		recencyList = []
+		proximityList = []
+		frequencyList = []	
+		metricList = []
+		
+	headNodeFound = False
+	graphHeadNode = None
+	while not headNodeFound:
 
-def identifyPrimarySourceNodeSentence(node, performIntermediarySyntacticalTransformation):	
-	#print("identifyPrimarySourceNodeSentence: node = ", node.lemma)
+		connectionNode1 = None
+		connectionNode2 = None
+		maxConnectionMetric = 0.0
 
-	if(len(node.CPgraphNodeTargetList) > 0):
-		for targetNode in node.CPgraphNodeTargetList:
-			CPisPrimarySourceNode = identifyPrimarySourceNode(node, targetNode, performIntermediarySyntacticalTransformation)
-			if(CPisPrimarySourceNode):
-				identifyPrimarySourceNodeSentence(targetNode, performIntermediarySyntacticalTransformation)
-	else:
-		node.CPisPrimarySourceNode = True
-	
-def identifyPrimarySourceNode(node, targetNode, performIntermediarySyntacticalTransformation):
-	
-	#print("identifyPrimarySourceNode: node = ", node.lemma, ", targetNode = ", targetNode.lemma)
-	if(primarySourceNodeDetectionCompareBranchHeadOrAdjacentBranchWordVector):
-		comparisonBranchFound, comparisonBranchNode = identifyBranchHeadNode(node, targetNode)
-	else:
-		comparisonBranchFound, comparisonBranchNode = identifyAdjacentBranchNode(node, targetNode)
-	if(comparisonBranchFound):
-		#print("comparisonBranchFound")
-		adjacentNodeFound, adjacentNode = identifyAdjacentNode(node, targetNode)
-		if(adjacentNodeFound):
-			#CHECKTHIS #if parentX child1 [leaf] node is more associated with adjacent branch than parentX child2 [leaf] node than it becomes the primary node
-			comparison1 = SPNLPpy_syntacticalGraphOperations.compareWordVectors(node.wordVector, comparisonBranchNode.wordVector)
-			comparison2 = SPNLPpy_syntacticalGraphOperations.compareWordVectors(adjacentNode.wordVector, comparisonBranchNode.wordVector)
-			#print("node.wordVector = ", node.wordVector) 
-			#print("adjacentNode.wordVector = ", adjacentNode.wordVector) 
-			#print("comparisonBranchNode.wordVector = ", comparisonBranchNode.wordVector) 
-			#print("comparison1 = ", comparison1) 
-			#print("comparison2 = ", comparison2)
-			if(comparison1 < comparison2):
-				node.CPisPrimarySourceNode = True
-			elif(comparison1 == comparison2):
-				#print("SPNLPpy_syntacticalGraphConstituencyParserWordVectors: identifyPrimarySourceNode warning: comparison1 == comparison2")
-				if(node.CPsourceNodePosition == sourceNodePositionFirst):
-					node.CPisPrimarySourceNode = True
-		else:
-			node.CPisPrimarySourceNode = True
-	else:
-		#print("!comparisonBranchFound")
-		#targetNode is graphNodeHead; set first node in targetNode.source as governor	#CHECKTHIS
-		#print("node.CPsourceNodePosition = ", node.CPsourceNodePosition)
-		if(node.CPsourceNodePosition == sourceNodePositionFirst):
-			node.CPisPrimarySourceNode = True
-	return node.CPisPrimarySourceNode
-			
-def identifyAdjacentNode(node, targetNode):
-	adjacentNodeFound = False
-	adjacentNode = None
-	for nodeTemp in targetNode.CPgraphNodeSourceList:
-		if(nodeTemp is not node):
-			adjacentNodeFound = True
-			adjacentNode = nodeTemp
-			
-	if(not adjacentNodeFound):
-		if(performIntermediarySyntacticalTransformation):
-			pass
-			#this case might be caused by SPNLPpy_syntacticalGraphIntermediaryTransformation (creates branches/hiddenNodes with single target and source)	
-		else:
-			print("identifyAdjacentNode error: !adjacentNodeFound")
-			exit()
-				
-	return adjacentNodeFound, adjacentNode
+		connectionFound = False
 
-def identifyBranchHeadNode(node, targetNode):
-	branchHeadFound = False
-	branchHeadNode = None
-	for branchHead in targetNode.CPgraphNodeTargetList:
-		branchHeadFound = True
-		branchHeadNode = branchHead
-	return branchHeadFound, branchHeadNode
+		for node1StackIndex, node1 in enumerate(connectivityStackNodeList):
+			for node2StackIndex, node2 in enumerate(connectivityStackNodeList):
+				if(node1StackIndex != node2StackIndex):
+					#print("node1.DPwMax = ", node1.DPwMax)
+					#print("node2.DPwMin = ", node2.DPwMin)
+					if(node1.DPwMax+1 == node2.DPwMin):
+						if(SPNLPpy_syntacticalGraphOperations.printVerbose):
+							print("calculateMetricConnection: node1.lemma = ", node1.lemma, ", node2.lemma = ", node2.lemma)
+						proximity = SPNLPpy_syntacticalGraphOperations.calculateProximityConnection(node1.w, node2.w)
+						frequency = SPNLPpy_syntacticalGraphOperations.calculateFrequencyConnection(sentenceTreeNodeList, node1, node2)
+						recency = SPNLPpy_syntacticalGraphOperations.calculateRecencyConnection(sentenceTreeNodeList, node1, node2, currentTime)	#minimise the difference in concept last access recency between left/right node
+						connectionMetric = SPNLPpy_syntacticalGraphOperations.calculateMetricConnection(proximity, frequency, recency)
+						if(connectionMetric > SPNLPpy_syntacticalGraphOperations.metricThresholdToCreateConnection):
+							if(connectionMetric > maxConnectionMetric):
+								#print("connectionMetric found")
+								connectionFound = True
+								maxConnectionMetric = connectionMetric
+								connectionNode1 = node1
+								connectionNode2 = node2
 						
-def identifyAdjacentBranchNode(node, targetNode):
-	adjacentBranchFound = False
-	adjacentBranchNode = None
-	for branchHead in targetNode.CPgraphNodeTargetList:
-		for adjacentBranch in branchHead.CPgraphNodeSourceList:
-			adjacentBranchFound = True
-			adjacentBranchNode = adjacentBranch
-	return adjacentBranchFound, adjacentBranchNode
-	
-def recordPrimaryLeafNodeSentence(node, CPprimaryLeafNode, performIntermediarySyntacticalTransformation):
-	node.CPprimaryLeafNode = CPprimaryLeafNode
-	#print("recordPrimaryLeafNodeSentence: node = ", node.lemma, ", CPprimaryLeafNode = ", CPprimaryLeafNode.lemma)
-	if(node.CPisPrimarySourceNode):
-		for targetNode in node.CPgraphNodeTargetList:
-			recordPrimaryLeafNodeSentence(targetNode, CPprimaryLeafNode, performIntermediarySyntacticalTransformation)
-			#adjacentNodeFound, adjacentNode = identifyAdjacentNode(node, targetNode)
+						if(calibrateConnectionMetricParameters):
+							proximityList.append(proximity)
+							frequencyList.append(frequency)
+							recencyList.append(recency)
+							metricList.append(connectionMetric)
+		
+		if(not connectionFound):
+			print("generateSyntacticalTreeDependencyParserWordVectors: error connectionFound - check calculateMetricConnection parameters > 0.0, maxConnectionMetric = ", maxConnectionMetric)
+			exit()
 
+		if(SPNLPpy_syntacticalGraphOperations.printVerbose):
+			print("create connection; w1 w2 = ", connectionNode1.w, " ", connectionNode2.w, ", connectionNode1.lemma connectionNode2.lemma = ", connectionNode1.lemma, " ", connectionNode2.lemma, ", metric = ", maxConnectionMetric)
 
-def formDependencyRelations(node, performIntermediarySyntacticalTransformation):	
-	#print("formDependencyRelations: node = ", node.lemma)
-	for targetNode in node.CPgraphNodeTargetList:
-		if(node.CPisPrimarySourceNode):
-			adjacentNodeFound, adjacentNode = identifyAdjacentNode(node, targetNode)
-			#print("\t formDependencyRelations: adjacentNode = ", adjacentNode.lemma)
-			if(adjacentNodeFound):
-				node.CPprimaryLeafNode.DPdependentList.append(adjacentNode.CPprimaryLeafNode)	
-				adjacentNode.CPprimaryLeafNode.DPgovernorList.append(node.CPprimaryLeafNode)
-			formDependencyRelations(targetNode, performIntermediarySyntacticalTransformation)
+		#CHECKTHIS limitation - infers directionality (source/target) of connection based on w1/w2 word order		
+		connectionDirection = True	#CHECKTHIS: always assume left to right directionality	#FUTURE: determine governor/dependent based on some other rule
+		#interpret connectionNode1=connectionNodeGovernor, connectionNode2=connectionNodeDependent
+		
+		#primary vars;
+		wordVector = SPNLPpy_syntacticalGraphOperations.getBranchWordVectorFromSourceNodes(connectionNode1, connectionNode2)
 
-def calculateNodeTreeLevelSentence(syntacticalGraphNode):	
-	treeLevel = calculateNodeTreeLevel(syntacticalGraphNode, 0)
-	#print("treeLevel = ", treeLevel)
-	syntacticalGraphNode.DPtreeLevel = treeLevel
-	for sourceNode in syntacticalGraphNode.DPdependentList:
-		calculateNodeTreeLevelSentence(sourceNode)
+		#sentenceTreeArtificial vars;
+		DPsubgraphSize = connectionNode1.DPsubgraphSize + connectionNode2.DPsubgraphSize
+		conceptWordVector = np.add(connectionNode1.conceptWordVector, connectionNode2.conceptWordVector)
+		conceptTime = connectionNode1.conceptTime + connectionNode2.conceptTime
+		DPtreeLevel = max(connectionNode1.DPtreeLevel, (connectionNode2.DPtreeLevel+1))
+		DPwMin = min(connectionNode1.DPwMin, connectionNode2.DPwMin)
+		DPwMax = max(connectionNode1.DPwMax, connectionNode2.DPwMax)
+		
+		connectionNode1.wordVector = wordVector
+		connectionNode1.DPsubgraphSize = DPsubgraphSize
+		connectionNode1.conceptWordVector = conceptWordVector
+		connectionNode1.conceptTime = conceptTime
+		connectionNode1.DPtreeLevel = DPtreeLevel
+		connectionNode1.DPwMin = DPwMin
+		connectionNode1.DPwMax = DPwMax
+				
+		#connection vars;
+		SPNLPpy_syntacticalGraphOperations.createGraphConnectionDP(connectionNode1, connectionNode2, addToConnectionsDictionary=False)
+		connectivityStackNodeList.remove(connectionNode2)	#remove dependent from stack, every dependent can only have 1 governor
 
-def calculateNodeTreeLevel(syntacticalGraphNode, treeLevel):	
-	maxTreeLevelBranch = treeLevel
-	for sourceNode in syntacticalGraphNode.DPdependentList:
-		treeLevelTemp = calculateNodeTreeLevel(sourceNode, treeLevel+1)
-		if(treeLevelTemp > maxTreeLevelBranch):
-			maxTreeLevelBranch = treeLevelTemp
-	return maxTreeLevelBranch
-
-
+		if(len(connectivityStackNodeList) == 1):
+			headNodeFound = True
+			connectionNode1.graphNodeType = graphNodeTypeHead	#reference set delimiter (captures primary subject/action/object of sentence clause)
+			graphHeadNode = connectionNode1
 			
+	if(calibrateConnectionMetricParameters):
+		proximityMinMeanMax = SPNLPpy_syntacticalGraphOperations.minMeanMaxList(proximityList)
+		frequencyMinMeanMax = SPNLPpy_syntacticalGraphOperations.minMeanMaxList(frequencyList)
+		recencyMinMeanMax = SPNLPpy_syntacticalGraphOperations.minMeanMaxList(recencyList)
+		metricMinMeanMax = SPNLPpy_syntacticalGraphOperations.minMeanMaxList(metricList)
+		print("proximityMinMeanMax = ", proximityMinMeanMax)
+		print("frequencyMinMeanMax = ", frequencyMinMeanMax)
+		print("recencyMinMeanMax = ", recencyMinMeanMax)
+		print("metricMinMeanMax = ", metricMinMeanMax)
+			
+	return graphHeadNode

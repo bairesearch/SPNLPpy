@@ -1,7 +1,7 @@
 """ANNtf2_operations.py
 
 # Author:
-Richard Bruce Baxter - Copyright (c) 2020-2021 Baxter AI (baxterai.com)
+Richard Bruce Baxter - Copyright (c) 2020-2022 Baxter AI (baxterai.com)
 
 # License:
 MIT License
@@ -27,34 +27,42 @@ debugSingleLayerNetwork = False
 
 #if(useBinaryWeights) or if(generateFirstLayerSDR)
 	
-		
-def generateParameterNameNetworkSkipLayers(networkIndex, l1, l2, arrayName):
-	parameterName = "n" + str(networkIndex) + "l1" + str(l1) + "l2" + str(l2) + arrayName
-	return parameterName
-	
-def generateParameterNameNetwork(networkIndex, l, arrayName):
-	parameterName = "n" + str(networkIndex) + "l" + str(l) + arrayName
-	return parameterName
 
-	
-def generateParameterNameSeqSkipLayers(l1, l2, s, arrayName):
-	parameterName = "l1" + str(l1) + "l2" + str(l2) + arrayName + "s" + str(s)
-	return parameterName
-	
-def generateParameterNameSeq(l, s, arrayName):
-	parameterName = "l" + str(l) + arrayName + "s" + str(s)
-	return parameterName
-	
-	
-def generateParameterNameSkipLayers(l1, l2, arrayName):
-	parameterName = "l1" + str(l1) + "l2" + str(l2) + arrayName
-	return parameterName
-	
 def generateParameterName(l, arrayName):
 	parameterName = "l" + str(l) + arrayName
 	return parameterName
+def generateParameterNameSkipLayers(lprior, l, arrayName):	#support skip layers
+	parameterName = "lprior" + str(lprior) + "l" + str(l) + arrayName
+	return parameterName
+#support multiple networks:			
+def generateParameterNameNetwork(networkIndex, l, arrayName):
+	parameterName = "n" + str(networkIndex) + "l" + str(l) + arrayName
+	return parameterName
+def generateParameterNameNetworkSkipLayers(networkIndex, lprior, l, arrayName):	#support skip layers
+	parameterName = "n" + str(networkIndex) + "lprior" + str(lprior) + "l" + str(l) + arrayName
+	return parameterName
+def generateParameterNameNetworkCurrentLayer(networkIndex, arrayName):
+	parameterName = "n" + str(networkIndex) + arrayName
+	return parameterName
 	
-	
+#support sequential inputs:		
+#used by SANI:
+def generateParameterNameSeq(l, s, arrayName):
+	parameterName = "l" + str(l) + "s" + str(s) + arrayName
+	return parameterName
+def generateParameterNameSeqSkipLayers(lprior, l, s, arrayName):	#support skip layers
+	parameterName = "lprior" + str(lprior) + "l" + str(l) + "s" + str(s) + arrayName
+	return parameterName
+#used by AEANN:
+#support multiple networks:	
+def generateParameterNameNetworkSeq(networkIndex, l, s, arrayName):
+	parameterName = "n" + str(networkIndex) + "l" + str(l) + "s" + str(s) + arrayName
+	return parameterName	
+def generateParameterNameNetworkSeqSkipLayers(networkIndex, lprior, l, s, arrayName):
+	parameterName = "n" + str(networkIndex) + "lprior" + str(lprior) + "l" + str(l) + "s" + str(s) + arrayName
+	return parameterName
+
+		
 def printShape(tensor, tensorName):
 	print(tensorName + ".shape = ")
 	print(tensor.shape)
@@ -66,23 +74,18 @@ def printAverage(tensor, tensorName, indentation):
 		indentationString = indentationString + "\t"
 	print(indentationString + tensorName + "Average: %f" % (tensorAverage))
 
-def calculateLossCrossEntropy(y_pred, y_true, datasetNumClasses, costCrossEntropyWithLogits=False, oneHotEncoded=False, reduceMean=True, meanSquaredError=False):
-	batchSize = y_pred.shape[0]
+def calculateLossCrossEntropy(y_pred, y_true, datasetNumClasses, costCrossEntropyWithLogits=False, oneHotEncoded=False, reduceMean=True):
 	if(costCrossEntropyWithLogits):
 		cost = tf.nn.sigmoid_cross_entropy_with_logits(logits=tf.squeeze(y_pred), labels=tf.cast(y_true, tf.float32))
 		if(reduceMean):
-			cost = tf.reduce_sum(cost)/batchSize
-	elif(meanSquaredError):
-		cost = tf.math.squared_difference(y_pred, y_true)	#meansquare error loss function
-		if(reduceMean):
-			cost = tf.math.reduce_mean(cost)	
+			cost = tf.reduce_mean(cost)
 	else:
 		if(not oneHotEncoded):
 			y_true = tf.one_hot(y_true, depth=datasetNumClasses)
 		y_pred = tf.clip_by_value(y_pred, 1e-9, 1.)
 		cost = -(y_true * tf.math.log(y_pred))
 		if(reduceMean):
-			cost = tf.reduce_sum(cost)/batchSize
+			cost = tf.reduce_sum(cost)
 	
 	return cost
 
@@ -112,23 +115,38 @@ def filterNParraysByClassTargetInverse(train_x, train_y, classTargetFilterIndex=
 	train_yFiltered = train_y[rowFilter]
 	return train_xFiltered, train_yFiltered
   
-def generateTFtrainDataFromNParrays(train_x, train_y, shuffleSize, batchSize, randomise=True):
+def generateTFtrainDataFromNParrays(train_x, train_y, shuffleSize, batchSize):
 	#shuffleSize = shuffleBufferSize
 	trainDataUnbatched = generateTFtrainDataUnbatchedFromNParrays(train_x, train_y)
-	trainData = generateTFtrainDataFromTrainDataUnbatched(trainDataUnbatched, shuffleSize, batchSize, randomise)
+	trainData = generateTFtrainDataFromTrainDataUnbatched(trainDataUnbatched, shuffleSize, batchSize)
 	return trainData
 
+#generate a single batch;
+def generateTFbatch(test_x, test_y, batchSize):
+	xShape = list(test_x.shape)
+	yShape = list(test_y.shape)
+	xShape[0] = batchSize
+	yShape[0] = batchSize
+	xShape = tuple(xShape)
+	yShape = tuple(yShape)
+	#print("test_x.shape = ", test_x.shape)
+	#print("test_y.shape = ", test_y.shape)
+	testBatchX = np.resize(test_x, xShape)
+	testBatchY = np.resize(test_y, yShape)
+	#print("testBatchX.shape = ", testBatchX.shape)
+	#print("testBatchY.shape = ", testBatchY.shape)
+	#print("testBatchX = ", testBatchX)
+	#print("testBatchY = ", testBatchY)
+	return testBatchX, testBatchY
+	
 def generateTFtrainDataUnbatchedFromNParrays(train_x, train_y):
 	#print("train_x.shape = ", train_x.shape)
 	#print("train_y.shape = ", train_y.shape)
 	trainDataUnbatched = tf.data.Dataset.from_tensor_slices((train_x, train_y))
 	return trainDataUnbatched
 
-def generateTFtrainDataFromTrainDataUnbatched(trainDataUnbatched, shuffleSize, batchSize, randomise=True):
-	if(randomise):
-		trainData = trainDataUnbatched.repeat().shuffle(shuffleSize).batch(batchSize).prefetch(1)
-	else:
-		trainData = trainDataUnbatched.repeat().batch(batchSize).prefetch(1)
+def generateTFtrainDataFromTrainDataUnbatched(trainDataUnbatched, shuffleSize, batchSize):
+	trainData = trainDataUnbatched.repeat().shuffle(shuffleSize).batch(batchSize).prefetch(1)	#do not repeat
 	return trainData
 
 
@@ -249,3 +267,38 @@ def convertSignOutputToBool(xSignOutput):
 	xSignOutput = tf.maximum(xSignOutput, 0)
 	xBool = tf.dtypes.cast(xSignOutput, dtype=tf.dtypes.bool)
 	return xBool
+
+#note if updated_value isVector, updated_value should be provided in 2D format
+def modifyTensorRowColumn(a, isRow, index, updated_value, isVector):
+	
+	if(not isRow):
+		a = tf.transpose(a)
+		if(isVector):
+			updated_value = tf.transpose(updated_value)
+	
+	if(index == 0):
+		if(isVector):
+			values = [updated_value, a[index+1:]]
+		else:
+			values = [[updated_value], a[index+1:]]
+	elif(index == a.shape[0]-1):
+		if(isVector):
+			values = [a[:index], updated_value]
+		else:
+			values = [a[:index], [updated_value]]
+	else:
+		if(isVector):
+			values = [a[:index], updated_value, a[index+1:]]
+		else:
+			values = [a[:index], [updated_value], a[index+1:]]
+	
+	#print("index = ", index)
+	#print("values = ", values)
+	#print("updated_value = ", updated_value)
+			
+	a = tf.concat(axis=0, values=values)
+			
+	if(not isRow):
+		a = tf.transpose(a)
+		
+	return a
