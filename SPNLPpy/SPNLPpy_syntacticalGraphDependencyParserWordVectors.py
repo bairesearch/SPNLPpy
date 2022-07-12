@@ -31,8 +31,7 @@ interpretRightNodeAsGovernor = True
  
 def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, sentenceTreeNodeList, connectivityStackNodeList, syntacticalGraphNodeDictionary):
 
-	useDependencyParseTree = True
-	SPNLPpy_syntacticalGraphOperations.setParserType(useDependencyParseTree)
+	SPNLPpy_syntacticalGraphOperations.setParserType(syntacticalGraphTypeDependencyTree)
 	
 	currentTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
 
@@ -94,9 +93,6 @@ def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLe
 		#CHECKTHIS: always assume left to right directionality	
 		#FUTURE: determine governor/dependent based on some other rule
 		#interpret connectionNode1=connectionNodeGovernor, connectionNode2=connectionNodeDependent
-		
-		#primary vars;
-		wordVector = SPNLPpy_syntacticalGraphOperations.getBranchWordVectorFromSourceNodes(connectionNode1, connectionNode2)
 
 		#sentenceTreeArtificial vars;
 		DPsubgraphSize = connectionNode1.DPsubgraphSize + connectionNode2.DPsubgraphSize
@@ -106,7 +102,6 @@ def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLe
 		DPwMin = min(connectionNode1.DPwMin, connectionNode2.DPwMin)
 		DPwMax = max(connectionNode1.DPwMax, connectionNode2.DPwMax)
 		
-		connectionNode1.wordVector = wordVector
 		connectionNode1.DPsubgraphSize = DPsubgraphSize
 		connectionNode1.conceptWordVector = conceptWordVector
 		connectionNode1.conceptTime = conceptTime
@@ -115,7 +110,7 @@ def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLe
 		connectionNode1.DPwMax = DPwMax
 				
 		#connection vars;
-		SPNLPpy_syntacticalGraphOperations.createGraphConnectionDP(connectionNode1, connectionNode2, addToConnectionsDictionary=False)
+		SPNLPpy_syntacticalGraphOperations.createGraphConnectionDP(connectionNode1, connectionNode2)
 		connectivityStackNodeList.remove(connectionNode2)	#remove dependent from stack, every dependent can only have 1 governor
 
 		if(len(connectivityStackNodeList) == 1):

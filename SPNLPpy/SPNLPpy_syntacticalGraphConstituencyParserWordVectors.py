@@ -29,8 +29,7 @@ calibrateConnectionMetricParameters = True
 
 def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, sentenceTreeNodeList, connectivityStackNodeList, syntacticalGraphNodeDictionary):
 
-	useDependencyParseTree = False
-	SPNLPpy_syntacticalGraphOperations.setParserType(useDependencyParseTree)
+	SPNLPpy_syntacticalGraphOperations.setParserType(syntacticalGraphTypeConstituencyTree)
 	
 	currentTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
 
