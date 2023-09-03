@@ -1,7 +1,7 @@
 """SPNLPpy_syntacticalGraphConstituencyParserWordVectors.py
 
 # Author:
-Richard Bruce Baxter - Copyright (c) 2022 Baxter AI (baxterai.com)
+Richard Bruce Baxter - Copyright (c) 2022-2023 Baxter AI (baxterai.com)
 
 # License:
 MIT License
@@ -29,8 +29,6 @@ calibrateConnectionMetricParameters = True
 
 def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, sentenceTreeNodeList, connectivityStackNodeList, syntacticalGraphNodeDictionary):
 
-	SPNLPpy_syntacticalGraphOperations.setParserType(syntacticalGraphTypeConstituencyTree)
-	
 	currentTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
 
 	#add connections to local/isolated/temporary graph (syntactical tree);
@@ -77,7 +75,7 @@ def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentence
 							metricList.append(connectionMetric)
 			
 		if(not connectionFound):
-			print("generateSyntacticalTreeConstituencyParserWordVectors: error connectionFound - check calculateMetricConnection parameters > 0.0, maxConnectionMetric = ", maxConnectionMetric)
+			print("error connectionFound - check calculateMetricConnection parameters > 0.0, maxConnectionMetric = ", maxConnectionMetric)
 			exit()
 
 		if(SPNLPpy_syntacticalGraphOperations.printVerbose):
@@ -95,7 +93,7 @@ def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentence
 		nodeGraphType = graphNodeTypeBranch
 
 		#sentenceTreeArtificial vars;
-		SPsubgraphSize = connectionNode1.CPsubgraphSize + connectionNode2.CPsubgraphSize + 1
+		CPsubgraphSize = connectionNode1.CPsubgraphSize + connectionNode2.CPsubgraphSize + 1
 		conceptWordVector = np.add(connectionNode1.conceptWordVector, connectionNode2.conceptWordVector)
 		conceptTime = connectionNode1.conceptTime + connectionNode2.conceptTime
 		CPtreeLevel = max(connectionNode1.CPtreeLevel, connectionNode2.CPtreeLevel) + 1
@@ -104,11 +102,11 @@ def generateSyntacticalTreeConstituencyParserWordVectors(sentenceIndex, sentence
 		CPwMax = max(connectionNode1.CPwMax, connectionNode2.CPwMax)
 
 		instanceID = SPNLPpy_syntacticalGraphOperations.getNewInstanceID(syntacticalGraphNodeDictionary, lemma)
-		hiddenNode = SyntacticalNode(instanceID, word, lemma, wordVector, posTag, nodeGraphType, currentTime, SPsubgraphSize, conceptWordVector, conceptTime, w, CPwMin, CPwMax, CPtreeLevel, sentenceIndex)
+		hiddenNode = SyntacticalNode(instanceID, word, lemma, wordVector, posTag, nodeGraphType, currentTime, CPsubgraphSize, conceptWordVector, conceptTime, w, CPwMin, CPwMax, CPtreeLevel, sentenceIndex)
 		SPNLPpy_syntacticalGraphOperations.addInstanceNodeToGraph(syntacticalGraphNodeDictionary, lemma, instanceID, hiddenNode)
 		
 		#connection vars;
-		SPNLPpy_syntacticalGraphOperations.createGraphConnectionWrapperCP(hiddenNode, connectionNode1, connectionNode2, connectionDirection, addToConnectionsDictionary=False)
+		SPNLPpy_syntacticalGraphOperations.createGraphConnectionWrapper(hiddenNode, connectionNode1, connectionNode2, connectionDirection, addToConnectionsDictionary=False)
 		sentenceTreeNodeList.append(hiddenNode)
 		connectivityStackNodeList.remove(connectionNode1)
 		connectivityStackNodeList.remove(connectionNode2)

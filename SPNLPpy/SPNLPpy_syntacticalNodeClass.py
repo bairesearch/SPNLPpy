@@ -1,7 +1,7 @@
 """SPNLPpy_syntacticalNodeClass.py
 
 # Author:
-Richard Bruce Baxter - Copyright (c) 2022 Baxter AI (baxterai.com)
+Richard Bruce Baxter - Copyright (c) 2022-2023 Baxter AI (baxterai.com)
 
 # License:
 MIT License
@@ -33,11 +33,6 @@ graphNodeTargetIndex = 0	#should only contain one element
 graphNodeSourceIndexFirst = 0	#should only contain 2 elements
 graphNodeSourceIndexSecond = 1	#should only contain 2 elements
 
-syntacticalGraphTypeUnknown = 0
-syntacticalGraphTypeConstituencyTree = 1
-syntacticalGraphTypeDependencyTree = 2
-syntacticalGraphTypeAcyclic = 3
-
 class SyntacticalNode:
 	def __init__(self, instanceID, word, lemma, wordVector, posTag, nodeGraphType, activationTime, CPsubgraphSize, conceptWordVector, conceptTime, w, CPwMin, CPwMax, CPtreeLevel, sentenceIndex):
 		#primary vars;
@@ -52,22 +47,19 @@ class SyntacticalNode:
 		#sentenceTreeArtificial vars (for sentence graph only, do not generalise to network graph);
 		self.CPlabel = None	#not used (stored for reference)
 		self.CPsubgraphSize = CPsubgraphSize	#for constituencyParser	#used to normalise wordVector/conceptTime for hidden nodes
-		self.DPsubgraphSize = 1	#for dependencyParser	#used to normalise wordVector/conceptTime for subgraphs
-		self.conceptWordVector = conceptWordVector	#requires /SPsubgraphSize
-		self.conceptTime = conceptTime	#requires /SPsubgraphSize
+		self.conceptWordVector = conceptWordVector	#requires /CPsubgraphSize
+		self.conceptTime = conceptTime	#requires /CPsubgraphSize
 		self.w = w #temporary sentence word index (used for reference resolution only)
 		self.CPwMin = CPwMin	#temporary sentence word index (used for reference resolution only) - min of all hidden nodes
 		self.CPwMax = CPwMax	#temporary sentence word index (used for reference resolution only) - max of all hidden nodes
-		self.DPwMin = w	#temporary sentence word index (used for reference resolution only) - min of all hidden nodes
-		self.DPwMax = w	#temporary sentence word index (used for reference resolution only) - max of all hidden nodes
 		self.CPtreeLevel = CPtreeLevel	#for constituencyParser
-		self.DPtreeLevel = 0	#for dependencyParser
 		self.sentenceIndex = sentenceIndex
 		#self.referenceSentence = False	#temporary flag: node has been reference by current sentence (used for reference resolution only)
 		self.CPisPrimarySourceNode = False #temporary for SPNLPpy_syntacticalGraphConstituencyParserWordVectors only
 		self.CPprimaryLeafNode = None	#temporary for SPNLPpy_syntacticalGraphConstituencyParserWordVectors only
+		self.DPtreeLevel = 0	#for dependencyParser
 		self.DPdependencyRelationLabelList = []	#not used (stored for reference)	#stored in dependents (to governor)	#should only contain one element
-		
+
 		#connection vars;
 		self.CPgraphNodeTargetList = []	#for constituencyParser	#should only contain one element
 		self.CPgraphNodeSourceList = []	#for constituencyParse
@@ -77,7 +69,6 @@ class SyntacticalNode:
 		self.CPsourceNodePosition = sourceNodePositionUnknown	#for leaf nodes only 
 		self.DPgovernorList = []	#for dependencyParser	#should only contain one element
 		self.DPdependentList = []	#for dependencyParser
-		self.AGconnectionList = []	#for acyclic graph
 		
 		#intermediary vars for semantic graph generation;
 		self.entityType = -1	#temp #GIA_ENTITY_TYPE_UNDEFINED
@@ -87,10 +78,6 @@ class SyntacticalNode:
 		
 		#temporary graph draw variables
 		self.drawn = False
-		
-		#temporary SPNLPpy_syntacticalGraphDependencyParserWordVectorsAcyclic variables
-		self.AGtraced = False
-		self.AGtracedFirst = False
 		
 def addConnectionToNodeTargets(node, nodeToConnect):
 	node.CPgraphNodeTargetList.append(nodeToConnect)

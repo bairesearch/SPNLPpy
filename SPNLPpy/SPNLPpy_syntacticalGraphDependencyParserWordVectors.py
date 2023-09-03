@@ -1,7 +1,7 @@
 """SPNLPpy_syntacticalGraphDependencyParserWordVectors.py
 
 # Author:
-Richard Bruce Baxter - Copyright (c) 2022 Baxter AI (baxterai.com)
+Richard Bruce Baxter - Copyright (c) 2022-2023 Baxter AI (baxterai.com)
 
 # License:
 MIT License
@@ -27,11 +27,10 @@ import SPNLPpy_syntacticalGraphOperations
 
 calibrateConnectionMetricParameters = True
 
-interpretRightNodeAsGovernor = True
- 
 def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLeafNodeList, sentenceTreeNodeList, connectivityStackNodeList, syntacticalGraphNodeDictionary):
 
-	SPNLPpy_syntacticalGraphOperations.setParserType(syntacticalGraphTypeDependencyTree)
+	useDependencyParseTree = True
+	SPNLPpy_syntacticalGraphOperations.setParserType(useDependencyParseTree)
 	
 	currentTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)
 
@@ -55,9 +54,9 @@ def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLe
 		for node1StackIndex, node1 in enumerate(connectivityStackNodeList):
 			for node2StackIndex, node2 in enumerate(connectivityStackNodeList):
 				if(node1StackIndex != node2StackIndex):
-					#print("node1.DPwMax = ", node1.DPwMax)
-					#print("node2.DPwMin = ", node2.DPwMin)
-					if(node1.DPwMax+1 == node2.DPwMin):
+					#print("node1.CPwMax = ", node1.CPwMax)
+					#print("node2.CPwMin = ", node2.CPwMin)
+					if(node1.CPwMax+1 == node2.CPwMin):
 						if(SPNLPpy_syntacticalGraphOperations.printVerbose):
 							print("calculateMetricConnection: node1.lemma = ", node1.lemma, ", node2.lemma = ", node2.lemma)
 						proximity = SPNLPpy_syntacticalGraphOperations.calculateProximityConnection(node1.w, node2.w)
@@ -77,46 +76,49 @@ def generateSyntacticalTreeDependencyParserWordVectors(sentenceIndex, sentenceLe
 							frequencyList.append(frequency)
 							recencyList.append(recency)
 							metricList.append(connectionMetric)
-		
+			
 		if(not connectionFound):
-			print("generateSyntacticalTreeDependencyParserWordVectors: error connectionFound - check calculateMetricConnection parameters > 0.0, maxConnectionMetric = ", maxConnectionMetric)
+			print("error connectionFound - check calculateMetricConnection parameters > 0.0, maxConnectionMetric = ", maxConnectionMetric)
 			exit()
 
 		if(SPNLPpy_syntacticalGraphOperations.printVerbose):
 			print("create connection; w1 w2 = ", connectionNode1.w, " ", connectionNode2.w, ", connectionNode1.lemma connectionNode2.lemma = ", connectionNode1.lemma, " ", connectionNode2.lemma, ", metric = ", maxConnectionMetric)
-		
-		if(interpretRightNodeAsGovernor):
-			connectionNode1Temp = connectionNode1
-			connectionNode1 = connectionNode2
-			connectionNode2 = connectionNode1Temp
+
 		#CHECKTHIS limitation - infers directionality (source/target) of connection based on w1/w2 word order		
-		#CHECKTHIS: always assume left to right directionality	
-		#FUTURE: determine governor/dependent based on some other rule
-		#interpret connectionNode1=connectionNodeGovernor, connectionNode2=connectionNodeDependent
+		connectionDirection = True	#CHECKTHIS: always assume left to right directionality
+
+		#primary vars;
+		word = connectionNode1.word + connectionNode2.word
+		lemma = connectionNode1.lemma + connectionNode2.lemma
+		wordVector = SPNLPpy_syntacticalGraphOperations.getBranchWordVectorFromSourceNodes(connectionNode1, connectionNode2)
+		posTag = None
+		activationTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)	#mean([connectionNode1.activationTime, connectionNode2.activationTime]) 
+		nodeGraphType = graphNodeTypeBranch
 
 		#sentenceTreeArtificial vars;
-		DPsubgraphSize = connectionNode1.DPsubgraphSize + connectionNode2.DPsubgraphSize
+		CPsubgraphSize = connectionNode1.CPsubgraphSize + connectionNode2.CPsubgraphSize + 1
 		conceptWordVector = np.add(connectionNode1.conceptWordVector, connectionNode2.conceptWordVector)
 		conceptTime = connectionNode1.conceptTime + connectionNode2.conceptTime
-		DPtreeLevel = max(connectionNode1.DPtreeLevel, (connectionNode2.DPtreeLevel+1))
-		DPwMin = min(connectionNode1.DPwMin, connectionNode2.DPwMin)
-		DPwMax = max(connectionNode1.DPwMax, connectionNode2.DPwMax)
+		CPtreeLevel = max(connectionNode1.CPtreeLevel, connectionNode2.CPtreeLevel) + 1
+		w = SPNLPpy_syntacticalGraphOperations.mean([connectionNode1.w, connectionNode2.w])
+		CPwMin = min(connectionNode1.CPwMin, connectionNode2.CPwMin)
+		CPwMax = max(connectionNode1.CPwMax, connectionNode2.CPwMax)
+
+		instanceID = SPNLPpy_syntacticalGraphOperations.getNewInstanceID(syntacticalGraphNodeDictionary, lemma)
+		hiddenNode = SyntacticalNode(instanceID, word, lemma, wordVector, posTag, nodeGraphType, currentTime, CPsubgraphSize, conceptWordVector, conceptTime, w, CPwMin, CPwMax, CPtreeLevel, sentenceIndex)
+		SPNLPpy_syntacticalGraphOperations.addInstanceNodeToGraph(syntacticalGraphNodeDictionary, lemma, instanceID, hiddenNode)
 		
-		connectionNode1.DPsubgraphSize = DPsubgraphSize
-		connectionNode1.conceptWordVector = conceptWordVector
-		connectionNode1.conceptTime = conceptTime
-		connectionNode1.DPtreeLevel = DPtreeLevel
-		connectionNode1.DPwMin = DPwMin
-		connectionNode1.DPwMax = DPwMax
-				
 		#connection vars;
-		SPNLPpy_syntacticalGraphOperations.createGraphConnectionDP(connectionNode1, connectionNode2)
-		connectivityStackNodeList.remove(connectionNode2)	#remove dependent from stack, every dependent can only have 1 governor
+		SPNLPpy_syntacticalGraphOperations.createGraphConnectionWrapper(hiddenNode, connectionNode1, connectionNode2, connectionDirection, addToConnectionsDictionary=False)
+		sentenceTreeNodeList.append(hiddenNode)
+		connectivityStackNodeList.remove(connectionNode1)
+		connectivityStackNodeList.remove(connectionNode2)
+		connectivityStackNodeList.append(hiddenNode)
 
 		if(len(connectivityStackNodeList) == 1):
 			headNodeFound = True
-			connectionNode1.graphNodeType = graphNodeTypeHead	#reference set delimiter (captures primary subject/action/object of sentence clause)
-			graphHeadNode = connectionNode1
+			hiddenNode.graphNodeType = graphNodeTypeHead	#reference set delimiter (captures primary subject/action/object of sentence clause)
+			graphHeadNode = hiddenNode
 			
 	if(calibrateConnectionMetricParameters):
 		proximityMinMeanMax = SPNLPpy_syntacticalGraphOperations.minMeanMaxList(proximityList)

@@ -1,7 +1,7 @@
 """SPNLPpy_syntacticalGraphConstituencyParserFormal.py
 
 # Author:
-Richard Bruce Baxter - Copyright (c) 2022 Baxter AI (baxterai.com)
+Richard Bruce Baxter - Copyright (c) 2022-2023 Baxter AI (baxterai.com)
 
 # License:
 MIT License
@@ -72,7 +72,7 @@ def generateSyntacticalTree(constituent, sentenceIndex, sentenceLeafNodeList, se
 		activationTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)	#mean([connectionNode1.activationTime, connectionNode2.activationTime]) 
 
 		#sentenceTreeArtificial vars;
-		SPsubgraphSize = 0
+		CPsubgraphSize = 0
 		conceptWordVector = 0
 		conceptTime = 0
 		CPtreeLevel = 0
@@ -93,7 +93,7 @@ def generateSyntacticalTree(constituent, sentenceIndex, sentenceLeafNodeList, se
 			activationTime = SPNLPpy_syntacticalGraphOperations.calculateActivationTime(sentenceIndex)	#mean([connectionNode1.activationTime, connectionNode2.activationTime]) 
 
 			#sentenceTreeArtificial vars;
-			SPsubgraphSize = SPsubgraphSize + childNode.CPsubgraphSize
+			CPsubgraphSize = CPsubgraphSize + childNode.CPsubgraphSize
 			conceptWordVector = np.add(childNode.conceptWordVector, conceptWordVector)
 			conceptTime = conceptTime + childNode.conceptTime
 			CPtreeLevel = max(CPtreeLevel, childNode.CPtreeLevel)
@@ -106,11 +106,11 @@ def generateSyntacticalTree(constituent, sentenceIndex, sentenceLeafNodeList, se
 		#perform averages;
 		CPtreeLevel = CPtreeLevel + 1
 		w = wSum/numberOfChildren	#mean
-		wordVector = SPNLPpy_syntacticalGraphOperations.getBranchWordVectorFromSourceNodesSum(wordVectorSum, conceptWordVector, SPsubgraphSize, numberOfChildren)
-		SPsubgraphSize = SPsubgraphSize + 1
+		wordVector = SPNLPpy_syntacticalGraphOperations.getBranchWordVectorFromSourceNodesSum(wordVectorSum, conceptWordVector, CPsubgraphSize, numberOfChildren)
+		CPsubgraphSize = CPsubgraphSize + 1
 		
 		instanceID = SPNLPpy_syntacticalGraphOperations.getNewInstanceID(syntacticalGraphNodeDictionary, lemma)
-		hiddenNode = SyntacticalNode(instanceID, word, lemma, wordVector, posTag, nodeGraphType, currentTime, SPsubgraphSize, conceptWordVector, conceptTime, w, CPwMin, CPwMax, CPtreeLevel, sentenceIndex)
+		hiddenNode = SyntacticalNode(instanceID, word, lemma, wordVector, posTag, nodeGraphType, currentTime, CPsubgraphSize, conceptWordVector, conceptTime, w, CPwMin, CPwMax, CPtreeLevel, sentenceIndex)
 		hiddenNode.CPlabel = constituentLabel
 		SPNLPpy_syntacticalGraphOperations.addInstanceNodeToGraph(syntacticalGraphNodeDictionary, lemma, instanceID, hiddenNode)
 		

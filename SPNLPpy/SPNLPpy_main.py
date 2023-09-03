@@ -1,7 +1,7 @@
 """SPNLPpy_main.py
 
 # Author:
-Richard Bruce Baxter - Copyright (c) 2022 Baxter AI (baxterai.com)
+Richard Bruce Baxter - Copyright (c) 2022-2023 Baxter AI (baxterai.com)
 
 # License:
 MIT License
@@ -46,7 +46,7 @@ algorithmSPNLP = "generateSyntacticalGraph"	#syntactical/semantic graph construc
 #algorithmSPNLP = "generateSemanticGraph"	#semantic graph construction based on transformation of syntactical graph	#incomplete
 
 #debug parameters
-debugUseSmallSequentialInputDataset = True
+debugUseSmallSequentialInputDataset = False
 if(algorithmSPNLP == "generateSyntacticalGraph"):
 	import SPNLPpy_syntacticalGraph
 	NLPsequentialInputTypeTokeniseWords = False	#perform spacy tokenization later in pipeline

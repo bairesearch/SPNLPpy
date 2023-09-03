@@ -1,7 +1,7 @@
 """SPNLPpy_syntacticalGraphOperations.py
 
 # Author:
-Richard Bruce Baxter - Copyright (c) 2022 Baxter AI (baxterai.com)
+Richard Bruce Baxter - Copyright (c) 2022-2023 Baxter AI (baxterai.com)
 
 # License:
 MIT License
@@ -24,51 +24,19 @@ from SPNLPpy_syntacticalNodeClass import *
 printVerbose = False
 
 #calculateFrequencyConnection method: calculates frequency of co-occurance of words/subsentences in corpus 
+calculateConnectionFrequencyUsingWordVectorSimilarity = True	#mandatory	#CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
+calculateReferenceFrequencyUsingWordVectorSimilarity = True	#optional	#else calculate reference similarity using calculateSubgraphNumberIdenticalConcepts
 
-#configured by setParserType;
-proximityWeightConnection = 1.0	#initialise (dependent var)
-frequencyWeightConnection = 1.0	#initialise (dependent var)
-recencyWeightConnection = 1.0	#initialise (dependent var)
-frequencyWeightReference = 1.0	#initialise (dependent var)
-recencyWeightReference = 1.0	#initialise (dependent var)
-calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic = False	#initialise (dependent var)
-calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic = False	#initialise (dependent var)
-calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic = False	#initialise (dependent var)
-calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamic = False	#initialise (dependent var)
-calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate = False	#initialise (dependent var)
-calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulate = False	#initialise (dependent var)
-
-calculateConnectionFrequencyUsingWordVectorSimilarityCP = True	#mandatory	#uses word vector similarity comparison
-calculateReferenceFrequencyUsingWordVectorSimilarityCP = True	#optional	#else calculate reference similarity using calculateSubgraphNumberIdenticalConcepts
-calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamicCP = False	#optional (not required to compare hidden node similarity as artificial word vectors are generated for new hidden nodes in sentence)	#else getBranchWordVector (flat)
-calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamicCP = False	#optional (not required to compare hidden node concept recency as artificial concept recency values are generated for new hidden nodes in sentence)		#else getBranchConceptTime (flat)
-if(calculateReferenceFrequencyUsingWordVectorSimilarityCP):
-	calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamicCP = False	#mandatory
+calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic = False	#optional (not required to compare hidden node similarity as artificial word vectors are generated for new hidden nodes in sentence)	#else getBranchWordVector (flat)
+calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic = False	#optional (not required to compare hidden node concept recency as artificial concept recency values are generated for new hidden nodes in sentence)		#else getBranchConceptTime (flat)
+if(calculateReferenceFrequencyUsingWordVectorSimilarity):
+	calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic = False	#mandatory
 else:
-	calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamicCP = True	#mandatory
-calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamicCP = False	#mandatory
-calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulateCP = True	#optional - branch wordVector calculated based on average of leafNode wordVectors, else average of previous branch wordVectors
-calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulateCP = True	#optional - branch conceptTime calculated based on average of leafNode conceptTime, else average of previous branch conceptTimes
+	calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic = True	#mandatory
+calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamic = False	#mandatory
 
-calculateConnectionFrequencyUsingWordVectorSimilarityDP = True	#mandatory	#uses word vector similarity comparison
-calculateReferenceFrequencyUsingWordVectorSimilarityDP = True	#currently mandatory (alternate implementation not yet coded)
-calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamicDP = False	#optional (not required to compare subbranch node similarity as artificial word vectors are generated for subgraph head nodes in sentence?)	#else getBranchWordVector (flat)
-calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamicDP = False	#optional (not required to compare subbranch node concept recency as artificial concept recency values are generated for subgraph head nodes in sentence?)		#else getBranchConceptTime (flat)
-calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamicDP = False	#mandatory
-calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamicDP = False	#mandatory
-calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulateDP = False	#optional - branch wordVector calculated based on average of subbranch wordVectors, else branch/node wordVectors
-calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulateDP = False	#optional - branch conceptTime calculated based on average of subbranch conceptTime, else branch/node conceptTimes
-
-calculateConnectionFrequencyUsingWordVectorSimilarityAG = True	#mandatory	#uses word vector similarity comparison
-calculateReferenceFrequencyUsingWordVectorSimilarityAG = True	#mandatory
-calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamicAG = False	#mandatory
-calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamicAG = False		#mandatory
-calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamicAG = False	#mandatory
-calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamicAG = False	#mandatory
-calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulateAG = False	#mandatory
-calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulateAG = False	#mandatory
-
-
+calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate = True	#optional - branch wordVector calculated based on average of leafNode wordVectors, else average of previous branch wordVectors
+calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulate = True	#optional - branch conceptTime calculated based on average of leafNode conceptTime, else average of previous branch conceptTimes
 
 conceptID = 0	#special instance ID for concepts
 maxTimeDiff = 10.0	#calculateTimeDiff(minRecency)	#CHECKTHIS: requires calibration (<= ~10: ensures timeDiff for unencountered concepts is not infinite - required for metric)	#units: sentenceIndex
@@ -78,69 +46,11 @@ maxTimeDiffForMatchingInstance = 2	#time in sentence index diff	#CHECKTHIS: requ
 metricThresholdToCreateConnection = 0.0	#CHECKTHIS: requires calibration
 metricThresholdToCreateReference = 1.0	#CHECKTHIS: requires calibration
 
-syntacticalGraphType = syntacticalGraphTypeUnknown	#False: constituencyParser, True: dependencyParser
-def setParserType(syntacticalGraphTypeTemp):
-	global syntacticalGraphType
-	syntacticalGraphType = syntacticalGraphTypeTemp
+useDependencyParseTree = False	#False: constituencyParser, True: dependencyParser
+def setParserType(useDependencyParseTreeTemp):
+	global useDependencyParseTree
+	useDependencyParseTree = useDependencyParseTreeTemp
 
-	global calculateConnectionFrequencyUsingWordVectorSimilarity
-	global calculateReferenceFrequencyUsingWordVectorSimilarity
-	global calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic
-	global calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic
-	global calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic
-	global calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamic
-	global calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate
-	global calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulate
-	
-	global proximityWeightConnection
-	global frequencyWeightConnection
-	global recencyWeightConnection
-	global frequencyWeightReference
-	global recencyWeightReference
-		
-	if(syntacticalGraphType == syntacticalGraphTypeConstituencyTree):
-		calculateConnectionFrequencyUsingWordVectorSimilarity = calculateConnectionFrequencyUsingWordVectorSimilarityCP
-		calculateReferenceFrequencyUsingWordVectorSimilarity = calculateReferenceFrequencyUsingWordVectorSimilarityCP
-		calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic = calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamicCP
-		calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic = calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamicCP
-		calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic = calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamicCP
-		calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamic = calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamicCP
-		calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate = calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulateCP
-		calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulate = calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulateCP
-		proximityWeightConnection = 1.0	#CHECKTHIS: requires calibration
-		frequencyWeightConnection = 1.0	#CHECKTHIS: requires calibration
-		recencyWeightConnection = 1.0	#CHECKTHIS: requires calibration
-		frequencyWeightReference = 1.0	#CHECKTHIS: requires calibration
-		recencyWeightReference = 1.0	#CHECKTHIS: requires calibration
-	elif(syntacticalGraphType == syntacticalGraphTypeDependencyTree):
-		calculateConnectionFrequencyUsingWordVectorSimilarity = calculateConnectionFrequencyUsingWordVectorSimilarityDP
-		calculateReferenceFrequencyUsingWordVectorSimilarity = calculateReferenceFrequencyUsingWordVectorSimilarityDP
-		calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic = calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamicDP
-		calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic = calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamicDP
-		calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic = calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamicDP
-		calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamic = calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamicDP
-		calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate = calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulateDP
-		calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulate = calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulateDP
-		proximityWeightConnection = 1.0	#CHECKTHIS: requires calibration
-		frequencyWeightConnection = 1.0	#CHECKTHIS: requires calibration
-		recencyWeightConnection = 1.0	#CHECKTHIS: requires calibration
-		frequencyWeightReference = 1.0	#CHECKTHIS: requires calibration
-		recencyWeightReference = 1.0	#CHECKTHIS: requires calibration
-	elif(syntacticalGraphType == syntacticalGraphTypeAcyclic):
-		calculateConnectionFrequencyUsingWordVectorSimilarity = calculateConnectionFrequencyUsingWordVectorSimilarityAG
-		calculateReferenceFrequencyUsingWordVectorSimilarity = calculateReferenceFrequencyUsingWordVectorSimilarityAG
-		calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamic = calculateConnectionFrequencyBasedOnNodeSentenceSubgraphsDynamicAG
-		calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamic = calculateConnectionRecencyBasedOnNodeSentenceSubgraphsDynamicAG
-		calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamic = calculateReferenceFrequencyBasedOnNodeSentenceSubgraphsDynamicAG
-		calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamic = calculateReferenceRecencyBasedOnNodeSentenceSubgraphsDynamicAG
-		calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate = calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulateAG
-		calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulate = calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulateAG
-		proximityWeightConnection = 0.15	#CHECKTHIS: requires calibration
-		frequencyWeightConnection = 1.0	#CHECKTHIS: requires calibration
-		recencyWeightConnection = 1.0	#CHECKTHIS: requires calibration
-		frequencyWeightReference = 1.0	#CHECKTHIS: requires calibration
-		recencyWeightReference = 1.0	#CHECKTHIS: requires calibration
-		
 #node:
 
 def createSubDictionaryForConcept(dic, lemma):
@@ -184,30 +94,17 @@ def getNewInstanceID(syntacticalGraphNodeDictionary, lemma):
 
 def removeNodeFromGraph(syntacticalGraphNodeDictionary, node):
 	nodeConceptInstances = syntacticalGraphNodeDictionary[node.lemma]
-	nodeConceptInstances.pop(node.instanceID)
+	nodeConceptInstances.pop(node.instanceID) 
 
 #connection:
 
-def createGraphConnectionAG(node1, node2):
-	node1.AGconnectionList.append(node2)	
-	node2.AGconnectionList.append(node1)
-
-def removeLastGraphConnectionAG(node1, node2):
-	node1.AGconnectionList.pop()
-	node2.AGconnectionList.pop()	
-		
-def createGraphConnectionDP(node1, node2):
-	node1.DPdependentList.append(node2)	
-	node2.DPgovernorList.append(node1)	
-	#node2.SPsourceNodePosition = len(node1.DPdependentList)
-	
-def createGraphConnectionWrapperCP(hiddenNode, node1, node2, connectionDirection, addToConnectionsDictionary=True):
+def createGraphConnectionWrapper(hiddenNode, node1, node2, connectionDirection, addToConnectionsDictionary=True):
 	if(connectionDirection):
-		createGraphConnectionCP(hiddenNode, node1, node2, addToConnectionsDictionary)
+		createGraphConnection(hiddenNode, node1, node2, addToConnectionsDictionary)
 	else:
-		createGraphConnectionCP(hiddenNode, node2, node1, addToConnectionsDictionary)
+		createGraphConnection(hiddenNode, node2, node1, addToConnectionsDictionary)
 		
-def createGraphConnectionCP(hiddenNode, node1, node2, addToConnectionsDictionary):
+def createGraphConnection(hiddenNode, node1, node2, addToConnectionsDictionary):
 	addConnectionToNodeTargets(node1, hiddenNode)
 	addConnectionToNodeTargets(node2, hiddenNode)
 	addConnectionToNodeSources(hiddenNode, node1)
@@ -228,27 +125,24 @@ def createGraphConnectionCP(hiddenNode, node1, node2, addToConnectionsDictionary
 #metric:
 
 def calculateMetricReference(frequency, recency):
-	frequency = (1-frequencyWeightReference) + (frequency*frequencyWeightReference)
-	recency = (1-recencyWeightReference) + (recency*recencyWeightReference)
+	#print("\tfrequency = ", frequency)
+	#print("\trecency = ", recency)
 	metric = frequency*recency #CHECKTHIS: requires calibration - normalisation of factors is required
+	#print("\tmetric = ", metric)
 	return metric
 		
 def calculateMetricConnection(proximity, frequency, recency):
-	proximity = (1-proximityWeightConnection) + (proximity*proximityWeightConnection)
-	frequency = (1-frequencyWeightConnection) + (frequency*frequencyWeightConnection)
-	recency = (1-recencyWeightConnection) + (recency*recencyWeightConnection)
 	metric = proximity*frequency*recency #CHECKTHIS: requires calibration - normalisation of factors is required
-	if(printVerbose):
-		print("\t\tcalculateMetricConnection: metric = ", metric, "; proximity = ", proximity, ", frequency = ", frequency, ", recency = ", recency)
+	#print("\t\tcalculateMetricConnection: metric = ", metric, "; proximity = ", proximity, ", frequency = ", frequency, ", recency = ", recency)
 	return metric
-
-		
+	
 	
 	
 #proximity:
 
 def calculateProximityConnection(w, w2):
-	proximity = 1.0 / abs(w-w2)
+	proximity = 1.0 / abs(w-w2)	#CHECKTHIS: requires calibration
+	#proximity = 1.0	#complete deweight of proximity parameter
 	return proximity
 
 
@@ -257,6 +151,7 @@ def calculateProximityConnection(w, w2):
 
 #frequency reference:
 def calculateFrequencyReference(sentenceTreeNodeList, node1, node2):
+	#CHECKTHIS: requires calibration
 	#CHECKTHIS; note compares node subgraph source components (not target components)
 	frequency = compareNodeReferenceSimilarity(sentenceTreeNodeList, node1, node2)	 #CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
 	return frequency
@@ -270,6 +165,7 @@ def compareNodeReferenceSimilarity(sentenceTreeNodeList, node1, node2):
 	
 #frequency connection:
 def calculateFrequencyConnection(sentenceTreeNodeList, node1, node2):
+	#CHECKTHIS: requires calibration
 	#CHECKTHIS; note compares node subgraph source components (not target components)
 	frequency = compareNodeConnectionSimilarity(sentenceTreeNodeList, node1, node2)	 #CHECKTHIS requires update - currently uses rudimentary word vector similarity comparison
 	return frequency
@@ -302,30 +198,30 @@ def compareNodeWordVectors(sentenceTreeNodeList, node1, node2, nodeSentenceSubgr
 def calculateSubgraphArtificialWordVector(sentenceTreeNodeList, node):
 	#CHECKTHIS: requires update - currently uses rudimentary combined word vector similarity comparison
 	subgraphArtificalWordVector = np.zeros(shape=ANNtf2_loadDataset.wordVectorLibraryNumDimensions)
-	if(syntacticalGraphType == syntacticalGraphTypeDependencyTree):
-		subgraphArtificalWordVector, SPsubgraphSize = calculateSubgraphArtificialWordVectorRecurseDP(sentenceTreeNodeList, node, subgraphArtificalWordVector, 0)	
-	elif(syntacticalGraphType == syntacticalGraphTypeConstituencyTree):
-		subgraphArtificalWordVector, SPsubgraphSize = calculateSubgraphArtificialWordVectorRecurseCP(sentenceTreeNodeList, node, subgraphArtificalWordVector, 0)	
-	subgraphArtificalWordVector = np.divide(subgraphArtificalWordVector, float(SPsubgraphSize))
+	if(useDependencyParseTree):
+		subgraphArtificalWordVector, DPsubgraphSize = calculateSubgraphArtificialWordVectorRecurseDP(sentenceTreeNodeList, node, subgraphArtificalWordVector, 0)	
+	else:
+		subgraphArtificalWordVector, CPsubgraphSize = calculateSubgraphArtificialWordVectorRecurseCP(sentenceTreeNodeList, node, subgraphArtificalWordVector, 0)	
+	subgraphArtificalWordVector = np.divide(subgraphArtificalWordVector, float(CPsubgraphSize))
 	return subgraphArtificalWordVector
 
-def calculateSubgraphArtificialWordVectorRecurseDP(sentenceTreeNodeList, node, subgraphArtificalWordVector, SPsubgraphSize):
+def calculateSubgraphArtificialWordVectorRecurseDP(sentenceTreeNodeList, node, subgraphArtificalWordVector, DPsubgraphSize):
 	subgraphArtificalWordVector = np.add(subgraphArtificalWordVector, node.wordVector)
-	SPsubgraphSize = SPsubgraphSize + 1
+	DPsubgraphSize = DPsubgraphSize + 1
 	for subgraphNode in node.DPdependentList:	
 		#if(subgraphNode in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
-		subgraphArtificalWordVector, SPsubgraphSize = calculateSubgraphArtificialWordVectorRecurseDP(sentenceTreeNodeList, subgraphNode, subgraphArtificalWordVector, SPsubgraphSize)
-	return subgraphArtificalWordVector, SPsubgraphSize
+		subgraphArtificalWordVector, DPsubgraphSize = calculateSubgraphArtificialWordVectorRecurseDP(sentenceTreeNodeList, subgraphNode, subgraphArtificalWordVector, DPsubgraphSize)
+	return subgraphArtificalWordVector, DPsubgraphSize
 	
-def calculateSubgraphArtificialWordVectorRecurseCP(sentenceTreeNodeList, node, subgraphArtificalWordVector, SPsubgraphSize):
+def calculateSubgraphArtificialWordVectorRecurseCP(sentenceTreeNodeList, node, subgraphArtificalWordVector, CPsubgraphSize):
 	if(node.graphNodeType == graphNodeTypeLeaf):
 		subgraphArtificalWordVector = np.add(subgraphArtificalWordVector, node.wordVector)
 		#print("subgraphArtificalWordVector = ", np.mean(np.abs(subgraphArtificalWordVector)))
-		SPsubgraphSize = SPsubgraphSize + 1
+		CPsubgraphSize = CPsubgraphSize + 1
 	for subgraphNode in node.CPgraphNodeSourceList:	
 		#if(subgraphNode in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
-		subgraphArtificalWordVector, SPsubgraphSize = calculateSubgraphArtificialWordVectorRecurseCP(sentenceTreeNodeList, subgraphNode, subgraphArtificalWordVector, SPsubgraphSize)
-	return subgraphArtificalWordVector, SPsubgraphSize
+		subgraphArtificalWordVector, CPsubgraphSize = calculateSubgraphArtificialWordVectorRecurseCP(sentenceTreeNodeList, subgraphNode, subgraphArtificalWordVector, CPsubgraphSize)
+	return subgraphArtificalWordVector, CPsubgraphSize
 	
 def calculateWordVectorSimilarity(wordVectorDiff):
 	similarity = 1.0 - wordVectorDiff
@@ -340,10 +236,7 @@ def compareWordVectors(wordVector1, wordVector2):
 
 def getBranchWordVectorFromSourceNodes(connectionNode1, connectionNode2):
 	if(calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate):
-		if(syntacticalGraphType == syntacticalGraphTypeDependencyTree):
-			wordVector = np.divide(np.add(connectionNode1.conceptWordVector, connectionNode2.conceptWordVector), (connectionNode1.DPsubgraphSize + connectionNode2.DPsubgraphSize))	
-		elif(syntacticalGraphType == syntacticalGraphTypeConstituencyTree):
-			wordVector = np.divide(np.add(connectionNode1.conceptWordVector, connectionNode2.conceptWordVector), (connectionNode1.CPsubgraphSize + connectionNode2.CPsubgraphSize))
+		wordVector = np.divide(np.add(connectionNode1.conceptWordVector, connectionNode2.conceptWordVector), (connectionNode1.CPsubgraphSize + connectionNode2.CPsubgraphSize))
 	else:
 		wordVector = np.divide(np.add(connectionNode1.wordVector, connectionNode2.wordVector), 2.0)
 	return wordVector
@@ -358,43 +251,36 @@ def getBranchWordVectorFromSourceNodesSum(wordVectorConnectionNodeSum, conceptWo
 	
 def getBranchWordVector(node1):
 	if(calculateFrequencyBasedOnNodeSentenceSubgraphsDynamicEmulate):
-		if(syntacticalGraphType == syntacticalGraphTypeDependencyTree):
-			wordVector = np.divide(node1.conceptWordVector, node1.DPsubgraphSize)
-		elif(syntacticalGraphType == syntacticalGraphTypeConstituencyTree):
-			wordVector = np.divide(node1.conceptWordVector, node1.CPsubgraphSize)
+		wordVector = np.divide(node1.conceptWordVector, node1.CPsubgraphSize)
 	else:
-		wordVector = node1.wordVector
+		wordVector = np.divide(node1.wordVector)
 	return wordVector
 
 #frequency metric 2 (identical concept similarity):
 def compareNodeIdenticalConceptSimilarity(sentenceTreeNodeList, node1, node2, nodeSentenceSubgraphsDynamic):
 	if(nodeSentenceSubgraphsDynamic):
-		if(syntacticalGraphType == syntacticalGraphTypeDependencyTree):
-			print("compareNodeIdenticalConceptSimilarity error: useDependencyParseTree is currently required; alternate implementation not coded")
-			exit()
-		elif(syntacticalGraphType == syntacticalGraphTypeConstituencyTree):
-			similarity = calculateSubgraphNumberIdenticalConcepts(sentenceTreeNodeList, node1, node2)			
+		similarity = calculateSubgraphNumberIdenticalConcepts(sentenceTreeNodeList, node1, node2)			
 	else:
 		print("compareNodeIdenticalConceptSimilarity currently requires nodeSentenceSubgraphsDynamic - no alternate method coded")
 		exit()
 	return similarity
 
 def calculateSubgraphNumberIdenticalConcepts(sentenceTreeNodeList, node1, nodeToCompare):
-	numberOfIdenticalConcepts, SPsubgraphSize = calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, node1, nodeToCompare, 0, 0)
-	similarity = numberOfIdenticalConcepts/SPsubgraphSize
+	numberOfIdenticalConcepts, CPsubgraphSize = calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, node1, nodeToCompare, 0, 0)
+	similarity = numberOfIdenticalConcepts/CPsubgraphSize
 	return similarity
 	
 #compares all nodes in node1 subgraph (to nodeToCompare subgraphs)
 #recurse node1 subgraph
-def calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, node1, nodeToCompare, numberOfIdenticalConcepts1, SPsubgraphSize):
+def calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, node1, nodeToCompare, numberOfIdenticalConcepts1, CPsubgraphSize):
 	#TODO: verify calculate source to target connections only
 	numberOfIdenticalConcepts2 = calculateSubgraphNumberIdenticalConcepts2(sentenceTreeNodeList, node1, nodeToCompare, 0)
 	numberOfIdenticalConcepts1 += numberOfIdenticalConcepts2
-	SPsubgraphSize = SPsubgraphSize + 1
+	CPsubgraphSize = CPsubgraphSize + 1
 	for subgraphNode1 in node1.CPgraphNodeSourceList:	
 		if(subgraphNode1 in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
-			numberOfIdenticalConcepts1, SPsubgraphSize = calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, subgraphNode1, nodeToCompare, numberOfIdenticalConcepts1, SPsubgraphSize)
-	return numberOfIdenticalConcepts1, SPsubgraphSize
+			numberOfIdenticalConcepts1, CPsubgraphSize = calculateSubgraphNumberIdenticalConcepts1(sentenceTreeNodeList, subgraphNode1, nodeToCompare, numberOfIdenticalConcepts1, CPsubgraphSize)
+	return numberOfIdenticalConcepts1, CPsubgraphSize
 
 #compares node1 with all nodes in node2 subgraph
 #recurse node2 subgraph
@@ -443,36 +329,22 @@ def compareNodeConceptTime(sentenceTreeNodeList, node1, node2, currentTime, node
 	
 def calculateSubgraphArtificialTime(sentenceTreeNodeList, node):
 	subgraphArtificalTime = 0
-	if(syntacticalGraphType == syntacticalGraphTypeDependencyTree):
-		subgraphArtificalTime, SPsubgraphSize = calculateSubgraphArtificialTimeRecurseDP(sentenceTreeNodeList, node, subgraphArtificalTime, 0)	
-	elif(syntacticalGraphType == syntacticalGraphTypeConstituencyTree):
-		subgraphArtificalTime, SPsubgraphSize = calculateSubgraphArtificialTimeRecurseCP(sentenceTreeNodeList, node, subgraphArtificalTime, 0)
-	subgraphArtificalTime = (subgraphArtificalTime / SPsubgraphSize)
+	subgraphArtificalTime, CPsubgraphSize = calculateSubgraphArtificialTimeRecurse(sentenceTreeNodeList, node, subgraphArtificalTime, 0)
+	subgraphArtificalTime = (subgraphArtificalTime / CPsubgraphSize)
 	return subgraphArtificalTime
 
-def calculateSubgraphArtificialTimeRecurseDP(sentenceTreeNodeList, node, subgraphArtificalTime, SPsubgraphSize):
-	subgraphArtificalTime = subgraphArtificalTime + node.conceptTime
-	SPsubgraphSize = SPsubgraphSize + 1
-	for subgraphNode in node.DPdependentList:	
-		#if(subgraphNode in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
-		subgraphArtificalTime, SPsubgraphSize = calculateSubgraphArtificialTimeRecurseDP(sentenceTreeNodeList, subgraphNode, subgraphArtificalTime, SPsubgraphSize)
-	return subgraphArtificalTime, SPsubgraphSize
-	
-def calculateSubgraphArtificialTimeRecurseCP(sentenceTreeNodeList, node, subgraphArtificalTime, SPsubgraphSize):
+def calculateSubgraphArtificialTimeRecurse(sentenceTreeNodeList, node, subgraphArtificalTime, CPsubgraphSize):
 	if(node.graphNodeType == graphNodeTypeLeaf):
 		subgraphArtificalTime = subgraphArtificalTime + node.conceptTime
-		SPsubgraphSize = SPsubgraphSize + 1
+		CPsubgraphSize = CPsubgraphSize + 1
 	for subgraphNode in node.CPgraphNodeSourceList:	
 		#if(subgraphNode in sentenceTreeNodeList):	#verify subgraph instance was referenced in current sentence
-		subgraphArtificalTime, SPsubgraphSize = calculateSubgraphArtificialTimeRecurseCP(sentenceTreeNodeList, subgraphNode, subgraphArtificalTime, SPsubgraphSize)
-	return subgraphArtificalTime, SPsubgraphSize
+		subgraphArtificalTime, CPsubgraphSize = calculateSubgraphArtificialTimeRecurse(sentenceTreeNodeList, subgraphNode, subgraphArtificalTime, CPsubgraphSize)
+	return subgraphArtificalTime, CPsubgraphSize
 
 def getBranchConceptTime(node1):
 	if(calculateRecencyBasedOnNodeSentenceSubgraphsDynamicEmulate):
-		if(syntacticalGraphType == syntacticalGraphTypeDependencyTree):
-			conceptTime = node1.conceptTime/node1.DPsubgraphSize
-		elif(syntacticalGraphType == syntacticalGraphTypeConstituencyTree):
-			conceptTime = node1.conceptTime/node1.CPsubgraphSize
+		conceptTime = node1.conceptTime/node1.CPsubgraphSize
 	else:
 		conceptTime = node1.activationTime	#conceptTime
 	return conceptTime
