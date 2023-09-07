@@ -9,10 +9,9 @@ MIT License
 # Installation:
 conda create -n anntf2 python=3.7
 source activate anntf2
-conda install nltk
-conda install spacy
-conda install networkx
-pip install matplotlib==2.2.3
+pip install networkx [required for SPNLPpy_syntacticalGraphDraw]
+pip install matplotlib==2.2.3 [required for SPNLPpy_syntacticalGraphDraw]
+pip install nltk spacy==2.3.7
 python3 -m spacy download en_core_web_md
 pip install benepar [required for SPNLPpy_syntacticalGraphConstituencyParserFormal]
 
